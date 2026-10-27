@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="Tuning" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/tuning.gd" id="1_tuning"]
+
+[resource]
+script = ExtResource("1_tuning")
+walk_speed = 3.5
+sprint_speed = 5.5
+crouch_speed = 1.8
+jump_velocity = 4.0
+ground_acceleration = 30.0
+air_control = 0.25
+mouse_sensitivity = 0.0025
+max_look_pitch_degrees = 85.0
+stand_height = 1.8
+crouch_height = 1.1
+crouch_transition_speed = 6.0
+eye_offset_from_top = 0.15
+noise_max = 10.0
+noise_drain_interval = 15.0
+sprint_noise_interval = 3.0
+sprint_noise_amount = 1.0

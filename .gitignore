@@ -1,0 +1,13 @@
+# Godot 4 generates this folder on import; never commit it.
+.godot/
+
+# Godot 4 Android export template folder.
+/android/
+
+# Exported game builds.
+/builds/
+
+# Operating system clutter.
+.DS_Store
+Thumbs.db
+desktop.ini
