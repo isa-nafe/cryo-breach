@@ -11,6 +11,9 @@ keep changes small enough to test in one sitting.
   doc disagree, the doc wins; ask before changing a rule.
 - `docs/development-plan.md`: phases, the current week's checklist and
   the networking rules.
+- `docs/build-plan/README.md`: the milestone-by-milestone build plan
+  with code for every phase. **Start every session there**: build the
+  first unticked milestone in its index, and follow its working rules.
 - The live versions of both docs (with diagrams) are on claude.ai; these
   Markdown copies were exported on 27 Oct 2026 and may fall behind. Ask the
   owner to re-export if a rule seems out of date.
@@ -21,7 +24,8 @@ keep changes small enough to test in one sitting.
   grey-box Cryo Bay, zone noise and debug HUD were written and checked with
   gdtoolkit, but have not yet been run in Godot. The README lists a first-run
   checklist; confirm it passes before building on top of it.
-- **Next: Week 2.** Hitscan pistol, reusable `HealthComponent` (aliens only;
+- **Next: milestones M1.0 to M1.3** in `docs/build-plan/` (Week 2 of
+  the development plan). Hitscan pistol, reusable `HealthComponent` (aliens only;
   players use the wound system), baked `NavigationRegion3D`, the first
   Crawler, a HUD and a restart-on-death flow.
 
