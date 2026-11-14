@@ -6,9 +6,7 @@ extends CanvasLayer
 @export var player_path: NodePath
 
 var _player: PlayerCharacter
-var _overview: Camera3D
-var _saved_fog := false
-var _saved_ambient := 0.0
+var _overview: OverviewCamera
 
 @onready var _info: Label = $Info
 
@@ -79,36 +77,10 @@ func _debug_keys(event: InputEvent) -> void:
 ## can see the whole layout. Press F4 again to go back.
 func _toggle_overview() -> void:
 	if _overview == null:
-		_overview = Camera3D.new()
-		_overview.projection = Camera3D.PROJECTION_ORTHOGONAL
-		_overview.size = Config.tuning.overview_camera_size
-		_overview.far = Config.tuning.overview_camera_height * 2.0
+		_overview = OverviewCamera.new()
 		get_tree().current_scene.add_child(_overview)
-		_overview.global_position = Vector3(
-			Config.tuning.overview_camera_x, Config.tuning.overview_camera_height, 0.0
-		)
-		_overview.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
-	var show_overview := not _overview.current
-	if show_overview:
-		_overview.make_current()
-	else:
+	if _overview.is_overview_on():
+		_overview.set_active(false)
 		_player.camera.make_current()
-	get_tree().call_group(&"ceilings", &"set_visible", not show_overview)
-	_set_overview_lighting(show_overview)
-
-
-## Fog and dim ambient light hide the ship from 100 m up, so change them while
-## the overview is on and put them back after.
-func _set_overview_lighting(on: bool) -> void:
-	var world := get_tree().current_scene.get_node_or_null(^"WorldEnvironment") as WorldEnvironment
-	if world == null or world.environment == null:
-		return
-	var environment := world.environment
-	if on:
-		_saved_fog = environment.fog_enabled
-		_saved_ambient = environment.ambient_light_energy
-		environment.fog_enabled = false
-		environment.ambient_light_energy = Config.tuning.overview_ambient_energy
 	else:
-		environment.fog_enabled = _saved_fog
-		environment.ambient_light_energy = _saved_ambient
+		_overview.set_active(true)

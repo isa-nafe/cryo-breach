@@ -1,21 +1,14 @@
 extends Node3D
-## The game world for one match. Builds the level, adds the player and the
-## HUDs, then starts the clock.
+## The game world for one match. Every player builds the ship from the same
+## room assignment. The host then adds the player, the HUDs and the rules and
+## starts the clock; in Phase 3 the other players only see the ship until
+## M3.2 adds their characters.
 ##
-## The ship is generated from data by ShipBuilder. Phase 2 uses a fixed room
-## assignment (all 21 rooms open); M4.5 shuffles the rooms.
+## Running this scene directly (not from the menu) is a solo match.
 
 const PLAYER_SCENE := preload("res://scenes/player/player.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 const DEBUG_HUD_SCENE := preload("res://scenes/ui/debug_hud.tscn")
-
-## Phase 2 rooms for some shuffled slots (the rest are Crew Quarters). M4.5
-## replaces this with a random shuffle of every room type.
-const PHASE2_ROOMS := {
-	&"slot_3": &"medbay",
-	&"slot_9": &"generator",
-	&"slot_11": &"armory",
-}
 
 ## The scenes aliens are made from, by alien id.
 const ALIEN_SCENES := {&"crawler": preload("res://scenes/aliens/crawler.tscn")}
@@ -34,9 +27,24 @@ var status: String = "Match running"
 
 
 func _ready() -> void:
+	if Net.players.is_empty():
+		Net.play_offline()
 	GameState.reset()
-	_ship.build(_make_assignment())
+	var assignment := Net.match_assignment
+	if assignment.is_empty():
+		assignment = RoomAssignment.make_phase2()
+	_ship.build(assignment)
 	_navigation.bake()
+	if multiplayer.is_server():
+		# The host waits until every player has built the ship.
+		Net.all_peers_loaded.connect(_host_start, CONNECT_ONE_SHOT)
+	else:
+		_show_client_view()
+	Net.report_loaded()
+
+
+## Host only: adds the player and the rules, then starts the match everywhere.
+func _host_start() -> void:
 	var spawn_points: Node3D = _ship.furnishings[&"cryo_bay"].get_node("SpawnPoints")
 	var player: PlayerCharacter = PLAYER_SCENE.instantiate()
 	player.position = (spawn_points.get_child(0) as Marker3D).global_position
@@ -57,6 +65,27 @@ func _ready() -> void:
 	var director := TimerDirector.new()
 	director.setup(spawn_alien)
 	add_child(director)
+	GameState.start_match()
+	if Net.is_networked():
+		_rpc_start_match.rpc()
+
+
+## What a player who is not the host sees until M3.2: the whole ship from above.
+func _show_client_view() -> void:
+	var overview := OverviewCamera.new()
+	add_child(overview)
+	overview.set_active(true)
+	var layer := CanvasLayer.new()
+	var label := Label.new()
+	label.text = "Connected to the host. Your character arrives in the next update (M3.2)."
+	label.position = Vector2(Config.tuning.menu_spacing, Config.tuning.menu_spacing)
+	layer.add_child(label)
+	add_child(layer)
+
+
+## The host tells the other players the match has started.
+@rpc("authority", "call_remote", "reliable")
+func _rpc_start_match() -> void:
 	GameState.start_match()
 
 
@@ -98,15 +127,3 @@ func _on_match_ended(reason: StringName) -> void:
 	var screen := END_SCREEN_SCENE.instantiate()
 	add_child(screen)
 	screen.show_result(reason, GameState.get_clock_text(), crew_kills)
-
-
-## Slot id -> room type id for every slot of the ship: the fixed rooms are
-## themselves, the shuffled slots get their Phase 2 room or Crew Quarters.
-func _make_assignment() -> Dictionary:
-	var assignment := {}
-	for slot: Dictionary in ShipLayoutData.SLOTS:
-		if slot.fixed != &"":
-			assignment[slot.id] = slot.fixed
-		else:
-			assignment[slot.id] = PHASE2_ROOMS.get(slot.id, &"quarters")
-	return assignment

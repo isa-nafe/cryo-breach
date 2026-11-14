@@ -47,6 +47,12 @@ keep changes small enough to test in one sitting.
   arrangement follows the diagram; names and look stay ours.
 - A stray file `C:\AppData_placeholder\unused.txt` was created by mistake
   outside the project; the owner can delete that folder.
+- **Phase 3 (networking) is built on the branch `phase-3`** (merge to `main`
+  only when the owner says so). **M3.1 is written but untested:** `Net`
+  autoload, main menu and lobby (host, join by address, start), the match
+  waits for every peer. The menu is the main scene now; F6 runs a scene
+  directly. Phase 2 is still not fully checked (see
+  `docs/phase-1-2-checklist.md`).
 - **Next:** owner checks M2.7 and M2.8, then **Gate 2** (a friend plays 15
   minutes solo), then Phase 3 (M3.1).
   The checklist for this is `docs/phase-1-2-checklist.md`.

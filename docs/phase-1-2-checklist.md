@@ -9,8 +9,9 @@ you saw under "Problems" at the bottom (or in `docs/playtest-notes.md`) and
 send it to Claude. Use the exact words from the Output panel when there is an
 error.
 
-Run the game from `scenes/match.tscn` (press F5 with it open) unless a section
-says `main.tscn` (press F6 with that scene open).
+Press F5 to run the game: the main menu opens, and **Play solo** starts a match.
+To run one scene directly, open it and press F6 (`scenes/match.tscn` is a solo
+match; `scenes/main.tscn` is the Phase 1 test scene).
 
 ## Keys you need
 
@@ -30,13 +31,13 @@ says `main.tscn` (press F6 with that scene open).
 ## 0. Start-up
 
 - [ ] The project opens with no red errors in the Output panel.
-- [ ] F5 on `match.tscn` starts you in the Cryo Bay, with no errors or
-      warnings in the Output panel (a few yellow lines are fine; write them
+- [ ] F5 opens the menu; Play solo starts you in the Cryo Bay, with no errors
+      or warnings in the Output panel (a few yellow lines are fine; write them
       down).
 - [ ] The debug overlay shows FPS, state, speed, zone, lamp, "Scene  Match
       running", and the clock at the top counts up from 00:00.
 - [ ] FPS stays near 60 while you walk through the whole ship.
-- [ ] Pressing R a few times at the end of a match restarts cleanly each time
+- [ ] Pressing R on the end screen a few times restarts cleanly each time
       (items, crates, doors and the clock all reset).
 
 ## 1. Movement and the debug overlay

@@ -183,3 +183,15 @@ extends Resource
 @export var slice_spawn_interval: float = 60.0
 ## Phase 2 only: most Crawlers alive at once.
 @export var slice_max_aliens: int = 2
+
+@export_group("Network")
+## The port a host listens on and a client connects to (UDP).
+@export var default_port: int = 24565
+## Longest player name, in characters.
+@export var max_name_length: int = 20
+## Width of the menu column, in pixels.
+@export var menu_width: float = 360.0
+## Space between menu items, in pixels.
+@export var menu_spacing: int = 10
+## Size of the title text on the menu.
+@export var menu_title_size: int = 40

@@ -222,6 +222,22 @@ and call `_rpc_start_match.rpc()` (`call_local`), which calls
 
 `default_port` 24565, `max_name_length` 20.
 
+### What was built (and where it differs from the plan above)
+
+- `autoload/net.gd`, `scripts/ui/main_menu.gd` (the menu and lobby are built in
+  code; `scenes/ui/main_menu.tscn` is just the root), `scripts/match/room_assignment.gd`
+  (the host makes the room assignment and sends it to everyone) and
+  `scripts/ui/overview_camera.gd` (a shared top-down camera, also used by F4).
+- The menu is now the project's main scene. To run `match.tscn` directly,
+  open it and press F6: it is a solo match.
+- `Net.host_start_match` loads the match locally and sends an RPC to the others
+  (no `call_local`), so solo play never depends on RPCs.
+- `match.gd` waits for `Net.all_peers_loaded` on the host, then adds the host's
+  player, the rules and the clock. Other players see the ship from above with a
+  note until M3.2 adds their characters.
+- On the end screen, R goes back to the menu in a network game and restarts the
+  match in solo play.
+
 ### Owner checks
 
 - Two windows: host in one, join in the other; both lists show both names.
