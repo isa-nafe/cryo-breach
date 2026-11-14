@@ -49,6 +49,7 @@ keep changes small enough to test in one sitting.
   outside the project; the owner can delete that folder.
 - **Next:** owner checks M2.7 and M2.8, then **Gate 2** (a friend plays 15
   minutes solo), then Phase 3 (M3.1).
+  The checklist for this is `docs/phase-1-2-checklist.md`.
 
 ## Architecture rules (from the design doc; follow them in every change)
 

@@ -291,7 +291,7 @@ its *Owner checks* in Godot.
 - [x] M2.6 Loot deck, search containers, room stations for the slice
 - [ ] M2.7 Escape pods, power cell, hyperspace jump, end screen
 - [x] M2.8 Room network laid out like the owner's diagram: 21 rooms, 28 corridors (decisions D20, D21, D22)
-- [ ] Gate 2: a friend plays 15 minutes solo and can say what they were meant to do
+- [ ] Gate 2: a friend plays 15 minutes solo and can say what they were meant to do (full list: `docs/phase-1-2-checklist.md`)
 
 **Phase 3: co-op networking** (`phase-3-networking.md`)
 
