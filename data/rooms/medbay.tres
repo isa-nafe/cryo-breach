@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="RoomType" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/room_type.gd" id="1_room"]
+[ext_resource type="PackedScene" path="res://scenes/rooms/furnish/medbay.tscn" id="2_furnish"]
+
+[resource]
+script = ExtResource("1_room")
+id = &"medbay"
+display_name = "Medbay"
+is_fixed = false
+is_essential = true
+search_spots = 2
+furnishing = ExtResource("2_furnish")
+light_color = Color(0.7, 1, 0.85, 1)

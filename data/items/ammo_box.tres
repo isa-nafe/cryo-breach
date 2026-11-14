@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"ammo_box"
+display_name = "Ammo box"
+two_handed = false
+stack_limit = 3
+use_kind = 7
+use_seconds = 0.0
+max_charges = 0
+consumed_on_use = false
+color = Color(0.9, 0.8, 0.2, 1)

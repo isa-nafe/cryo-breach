@@ -1,0 +1,82 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/stations/ammo_locker.gd" id="1_s"]
+[ext_resource type="Script" path="res://scripts/world/stations/gun_rack.gd" id="2_s"]
+
+[sub_resource type="BoxMesh" id="AmmoLocker_mesh"]
+size = Vector3(0.7, 2, 1.4)
+
+[sub_resource type="StandardMaterial3D" id="AmmoLocker_mat"]
+albedo_color = Color(0.8, 0.65, 0.25, 1)
+
+[sub_resource type="BoxShape3D" id="AmmoLocker_area"]
+size = Vector3(0.9, 2.2, 1.6)
+
+[sub_resource type="BoxShape3D" id="AmmoLocker_body"]
+size = Vector3(0.7, 2, 1.4)
+
+[sub_resource type="BoxMesh" id="GunRack_mesh"]
+size = Vector3(0.5, 1.6, 1.4)
+
+[sub_resource type="StandardMaterial3D" id="GunRack_mat"]
+albedo_color = Color(0.35, 0.35, 0.4, 1)
+
+[sub_resource type="BoxShape3D" id="GunRack_area"]
+size = Vector3(0.7, 1.8, 1.6)
+
+[sub_resource type="BoxShape3D" id="GunRack_body"]
+size = Vector3(0.5, 1.6, 1.4)
+
+[node name="ArmoryFurnishing" type="Node3D"]
+
+[node name="AmmoLocker" type="Area3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -4.8, 1, 0)
+script = ExtResource("1_s")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AmmoLocker"]
+shape = SubResource("AmmoLocker_area")
+
+[node name="Body" type="StaticBody3D" parent="AmmoLocker"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AmmoLocker/Body"]
+shape = SubResource("AmmoLocker_body")
+
+[node name="Mesh" type="MeshInstance3D" parent="AmmoLocker"]
+mesh = SubResource("AmmoLocker_mesh")
+surface_material_override/0 = SubResource("AmmoLocker_mat")
+
+[node name="Label" type="Label3D" parent="AmmoLocker"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+billboard = 1
+pixel_size = 0.006
+font_size = 40
+outline_size = 10
+text = "AMMO"
+
+[node name="GunRack" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.8, 0.8, 0)
+script = ExtResource("2_s")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GunRack"]
+shape = SubResource("GunRack_area")
+
+[node name="Body" type="StaticBody3D" parent="GunRack"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GunRack/Body"]
+shape = SubResource("GunRack_body")
+
+[node name="Mesh" type="MeshInstance3D" parent="GunRack"]
+mesh = SubResource("GunRack_mesh")
+surface_material_override/0 = SubResource("GunRack_mat")
+
+[node name="Label" type="Label3D" parent="GunRack"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+billboard = 1
+pixel_size = 0.006
+font_size = 40
+outline_size = 10
+text = "GUN RACK"

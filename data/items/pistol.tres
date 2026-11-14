@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/item_data.gd" id="1_item"]
+[ext_resource type="Resource" path="res://data/weapons/pistol.tres" id="2_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/pistol.tscn" id="3_view"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"pistol"
+display_name = "Pistol"
+two_handed = false
+stack_limit = 1
+use_kind = 1
+use_seconds = 0.0
+max_charges = 8
+consumed_on_use = false
+color = Color(0.2, 0.22, 0.25, 1)
+weapon = ExtResource("2_weapon")
+view_scene = ExtResource("3_view")

@@ -1,0 +1,128 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/stations/escape_pod.gd" id="1_s"]
+[ext_resource type="Script" path="res://scripts/world/stations/pod_socket.gd" id="2_s"]
+
+[sub_resource type="BoxMesh" id="Pod1_mesh"]
+size = Vector3(1.8, 1, 1.4)
+
+[sub_resource type="StandardMaterial3D" id="Pod1_mat"]
+albedo_color = Color(0.8, 0.2, 0.2, 1)
+
+[sub_resource type="BoxShape3D" id="Pod1_area"]
+size = Vector3(2, 1.2, 1.6)
+
+[sub_resource type="BoxMesh" id="Pod2_mesh"]
+size = Vector3(1.8, 1, 1.4)
+
+[sub_resource type="StandardMaterial3D" id="Pod2_mat"]
+albedo_color = Color(0.8, 0.2, 0.2, 1)
+
+[sub_resource type="BoxShape3D" id="Pod2_area"]
+size = Vector3(2, 1.2, 1.6)
+
+[sub_resource type="BoxMesh" id="Pod3_mesh"]
+size = Vector3(1.8, 1, 1.4)
+
+[sub_resource type="StandardMaterial3D" id="Pod3_mat"]
+albedo_color = Color(0.8, 0.2, 0.2, 1)
+
+[sub_resource type="BoxShape3D" id="Pod3_area"]
+size = Vector3(2, 1.2, 1.6)
+
+[sub_resource type="BoxMesh" id="PodSocket_mesh"]
+size = Vector3(0.8, 1.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="PodSocket_mat"]
+albedo_color = Color(0.3, 0.3, 0.35, 1)
+
+[sub_resource type="BoxShape3D" id="PodSocket_area"]
+size = Vector3(1, 1.4, 1.2)
+
+[sub_resource type="BoxShape3D" id="PodSocket_body"]
+size = Vector3(0.8, 1.2, 1)
+
+[node name="PodBayFurnishing" type="Node3D"]
+
+[node name="Pod1" type="Area3D" parent="."]
+transform = Transform3D(0.5, 0, -0.866, 0, 1, 0, 0.866, 0, 0.5, 2.2, 0.5, -3.8105)
+script = ExtResource("1_s")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Pod1"]
+shape = SubResource("Pod1_area")
+
+[node name="Mesh" type="MeshInstance3D" parent="Pod1"]
+mesh = SubResource("Pod1_mesh")
+surface_material_override/0 = SubResource("Pod1_mat")
+
+[node name="Label" type="Label3D" parent="Pod1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+billboard = 1
+pixel_size = 0.006
+font_size = 40
+outline_size = 10
+text = "POD 1"
+
+[node name="Pod2" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.4, 0.5, 0)
+script = ExtResource("1_s")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Pod2"]
+shape = SubResource("Pod2_area")
+
+[node name="Mesh" type="MeshInstance3D" parent="Pod2"]
+mesh = SubResource("Pod2_mesh")
+surface_material_override/0 = SubResource("Pod2_mat")
+
+[node name="Label" type="Label3D" parent="Pod2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+billboard = 1
+pixel_size = 0.006
+font_size = 40
+outline_size = 10
+text = "POD 2"
+
+[node name="Pod3" type="Area3D" parent="."]
+transform = Transform3D(0.5, 0, 0.866, 0, 1, 0, -0.866, 0, 0.5, 2.2, 0.5, 3.8105)
+script = ExtResource("1_s")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Pod3"]
+shape = SubResource("Pod3_area")
+
+[node name="Mesh" type="MeshInstance3D" parent="Pod3"]
+mesh = SubResource("Pod3_mesh")
+surface_material_override/0 = SubResource("Pod3_mat")
+
+[node name="Label" type="Label3D" parent="Pod3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+billboard = 1
+pixel_size = 0.006
+font_size = 40
+outline_size = 10
+text = "POD 3"
+
+[node name="PodSocket" type="Area3D" parent="."]
+transform = Transform3D(-0.5, 0, 0.866, 0, 1, 0, -0.866, 0, -0.5, -2.3, 0.6, 3.9837)
+script = ExtResource("2_s")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PodSocket"]
+shape = SubResource("PodSocket_area")
+
+[node name="Body" type="StaticBody3D" parent="PodSocket"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PodSocket/Body"]
+shape = SubResource("PodSocket_body")
+
+[node name="Mesh" type="MeshInstance3D" parent="PodSocket"]
+mesh = SubResource("PodSocket_mesh")
+surface_material_override/0 = SubResource("PodSocket_mat")
+
+[node name="Label" type="Label3D" parent="PodSocket"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+billboard = 1
+pixel_size = 0.006
+font_size = 40
+outline_size = 10
+text = "POD POWER"

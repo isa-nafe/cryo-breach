@@ -1,0 +1,82 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/stations/rest_bed.gd" id="1_s"]
+[ext_resource type="Script" path="res://scripts/world/stations/surgery_pod.gd" id="2_s"]
+
+[sub_resource type="BoxMesh" id="RestBed_mesh"]
+size = Vector3(1.6, 0.6, 1.2)
+
+[sub_resource type="StandardMaterial3D" id="RestBed_mat"]
+albedo_color = Color(0.7, 0.95, 0.8, 1)
+
+[sub_resource type="BoxShape3D" id="RestBed_area"]
+size = Vector3(1.8, 0.8, 1.4)
+
+[sub_resource type="BoxShape3D" id="RestBed_body"]
+size = Vector3(1.6, 0.6, 1.2)
+
+[sub_resource type="BoxMesh" id="SurgeryPod_mesh"]
+size = Vector3(1.6, 1, 1.4)
+
+[sub_resource type="StandardMaterial3D" id="SurgeryPod_mat"]
+albedo_color = Color(0.4, 0.8, 0.85, 1)
+
+[sub_resource type="BoxShape3D" id="SurgeryPod_area"]
+size = Vector3(1.8, 1.2, 1.6)
+
+[sub_resource type="BoxShape3D" id="SurgeryPod_body"]
+size = Vector3(1.6, 1, 1.4)
+
+[node name="MedbayFurnishing" type="Node3D"]
+
+[node name="RestBed" type="Area3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -4.3, 0.3, 0)
+script = ExtResource("1_s")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RestBed"]
+shape = SubResource("RestBed_area")
+
+[node name="Body" type="StaticBody3D" parent="RestBed"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="RestBed/Body"]
+shape = SubResource("RestBed_body")
+
+[node name="Mesh" type="MeshInstance3D" parent="RestBed"]
+mesh = SubResource("RestBed_mesh")
+surface_material_override/0 = SubResource("RestBed_mat")
+
+[node name="Label" type="Label3D" parent="RestBed"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+billboard = 1
+pixel_size = 0.006
+font_size = 40
+outline_size = 10
+text = "REST BED"
+
+[node name="SurgeryPod" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3, 0.5, 0)
+script = ExtResource("2_s")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SurgeryPod"]
+shape = SubResource("SurgeryPod_area")
+
+[node name="Body" type="StaticBody3D" parent="SurgeryPod"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SurgeryPod/Body"]
+shape = SubResource("SurgeryPod_body")
+
+[node name="Mesh" type="MeshInstance3D" parent="SurgeryPod"]
+mesh = SubResource("SurgeryPod_mesh")
+surface_material_override/0 = SubResource("SurgeryPod_mat")
+
+[node name="Label" type="Label3D" parent="SurgeryPod"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+billboard = 1
+pixel_size = 0.006
+font_size = 40
+outline_size = 10
+text = "SURGERY"

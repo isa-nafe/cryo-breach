@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="RoomType" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/room_type.gd" id="1_room"]
+[ext_resource type="PackedScene" path="res://scenes/rooms/furnish/cryo_bay.tscn" id="2_furnish"]
+
+[resource]
+script = ExtResource("1_room")
+id = &"cryo_bay"
+display_name = "Cryo Bay"
+is_fixed = true
+is_essential = false
+search_spots = 1
+furnishing = ExtResource("2_furnish")
+light_color = Color(0.7, 0.85, 1, 1)

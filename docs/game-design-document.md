@@ -60,11 +60,11 @@ Escape pods can launch at any time once they are unlocked (see Escaping and the 
 
 ## The ship
 
-The *Meridian* has 12 rooms on a central spine corridor running from the Bridge at the front to the Pod Bay at the back. Five rooms are fixed and always in the same place; the seven other slots get a different room type every match.
+The *Meridian* has 21 rooms joined by 28 corridors, from the Bridge at the front to the engines at the back. Sixteen rooms are hexagons; the Bridge, the Cryo Bay and the three engine rooms have their own shapes. Rooms have 2 to 5 doors, and the corridors form loops, so there is always more than one way round. The layout is the same every match. Six rooms are fixed and always in the same place and shape (the Bridge, the Cryo Bay in the middle, the three engines at the back, and the Pod Bay, a hexagon beside the engines); the 15 other slots get a different room type every match.
 
-*[Diagram: Meridian layout · 12 rooms, 3 power sections. See the online version of this doc.]*
+*[Diagram: Meridian layout · 21 rooms, 28 corridors, 3 power sections. See the online version of this doc.]*
 
-Every room opens onto the spine corridor, so the corridor is the noisiest, most-travelled place on the ship.
+Corridors are 2 m wide, between about 8 and 27 m long, and bend where they must. Each has one door, in the middle of its longest straight piece. The Bridge is at the front, the Cryo Bay in the middle, and the three engines in a column at the back.
 
 **Fixed rooms**
 
@@ -73,10 +73,11 @@ Every room opens onto the spine corridor, so the corridor is the noisiest, most-
 | Bridge | Fore | Set the course (Earth, Mars Station or Deep Space; starts at random and unknown until checked). Arm or cancel the self-destruct. Read ship integrity. Holds the one Data Core. |
 | Cryo Bay | Fore | Starting room. 6 cryopods, unlocked from 20:00. |
 | Engine Room A | Aft | Check, repair or damage engine A. |
-| Engine Room B | Aft | Check, repair or damage engine B. Each engine starts working or damaged at random, and at least one starts damaged. |
+| Engine Room B | Aft | Check, repair or damage engine B. |
+| Engine Room C | Aft | Check, repair or damage engine C. Each engine starts working or damaged at random, and at least one starts damaged. |
 | Pod Bay | Aft | 3 escape pods with 2 seats each, and the power socket that unlocks them. |
 
-**Shuffled rooms.** Each match fills the 7 slots with the 5 essential rooms plus 2 drawn at random from the 5 optional ones.
+**Shuffled rooms.** Each match fills the 15 slots with all 10 room types (the 5 essential and the 5 optional rooms) and 5 Crew Quarters, in random places.
 
 | Room | In every match? | What you do there |
 | --- | --- | --- |
@@ -85,11 +86,12 @@ Every room opens onto the spine corridor, so the corridor is the noisiest, most-
 | Armory | Yes | Ammo locker with 3 refills shared by the whole crew. A rack with one random gun (pistol or shotgun). |
 | Security | Yes | Door terminal: lock any door for 60 s (20 s cooldown). Pod terminal: lock one pod for 60 s. |
 | Generator | Yes | Breakers to cut or restore power to each section (5 s). Always holds one power cell. |
-| Storage | No | 6 search spots instead of the usual 2-3. Holds a second power cell. |
-| Comms | No | Ship-wide broadcast microphone. Holds 2 radios. |
-| Lab | No | Analyse an Alien Sample (15 s): every weapon deals +25% damage to aliens for the rest of the match. Uses up the sample. |
-| Fire Control | No | Put out the fire in any one room from here (60 s cooldown). |
-| Air Control | No | Seal a breach in any room from here, or vent a room into space (60 s cooldown; see Sabotage). |
+| Storage | Yes | 6 search spots instead of the usual 2-3. Holds a second power cell. |
+| Comms | Yes | Ship-wide broadcast microphone. Holds 2 radios. |
+| Lab | Yes | Analyse an Alien Sample (15 s): every weapon deals +25% damage to aliens for the rest of the match. Uses up the sample. |
+| Fire Control | Yes | Put out the fire in any one room from here (60 s cooldown). |
+| Air Control | Yes | Seal a breach in any room from here, or vent a room into space (60 s cooldown; see Sabotage). |
+| Crew Quarters | 5 per match | Nothing but 3 search spots: bunks and lockers. They fill the slots left over.
 
 **Knowing the map.** A shuffled room's type is revealed only when you step inside; doors carry no labels. Your map starts with the hull outline and the Cryo Bay, and adds each room when you enter it. Nobody else sees your map, so sharing what you found means telling people, truthfully or not.
 
@@ -101,11 +103,11 @@ Every room opens onto the spine corridor, so the corridor is the noisiest, most-
 | Locked | Security terminal, 60 s | Players with a keycard; Breeders break it in 5 s; Queens instantly |
 | Welded | Welder, 4 s; stays until cut open with a welder (4 s) | Breeders break it in 10 s; Queens in 3 s |
 
-**Vents** are for aliens only. Every room and corridor segment has one vent, and aliens crawl to a neighbouring room or segment in 5 s, ignoring doors. A welder seals a vent in 4 s; Larvae, Crawlers and Adults can no longer use it, Breeders and Queens break through in 10 s.
+**Vents** are for aliens only. Every room and corridor has one vent, and aliens crawl to a neighbouring room or corridor in 5 s, ignoring doors. A welder seals a vent in 4 s; Larvae, Crawlers and Adults can no longer use it, Breeders and Queens break through in 10 s.
 
-**Corridor.** The spine corridor is split into 5 segments between the room columns. Segments count as places for noise and encounters, but fires and breaches only happen in rooms.
+**Corridors.** Each of the 17 corridors is its own place for noise and encounters, but fires and breaches only happen in rooms. A corridor takes the power section of the room nearer the front.
 
-**Power sections.** Fore (Bridge, Cryo Bay, slots 1-3), Mid (slots 4-7) and Aft (both engines, Pod Bay). In a section without power the lights go out (helmet lamps only), terminals stop working, every lock in that section releases, and doors must be forced open by hand (3 s, noisy). Cryopods and escape pods run on emergency power and keep working.
+**Power sections.** Fore (Bridge, Cryo Bay, slots 1-3), Mid (slots 4-7) and Aft (the three engines, Pod Bay). In a section without power the lights go out (helmet lamps only), terminals stop working, every lock in that section releases, and doors must be forced open by hand (3 s, noisy). Cryopods and escape pods run on emergency power and keep working.
 
 ## Players
 
@@ -180,7 +182,7 @@ You win if you survive **and** meet the objective you committed to; several play
 | Name | Survive, and... |
 | --- | --- |
 | Strength in numbers | at least 2 other players also survive |
-| Bring her home | the ship arrives at Earth: both engines working, course set to Earth, ship not destroyed |
+| Bring her home | the ship arrives at Earth: all three engines working, course set to Earth, ship not destroyed |
 | Pest control | the crew kills at least 5 aliens in total (4 with 3 players) |
 | Save the ship | the ship is not destroyed |
 | Clean bill of health | no sleeper dies of infection |
@@ -246,7 +248,7 @@ For reference, players walk at 3.5 m/s, sprint at 5.5 m/s and crouch-walk silent
 
 ## Noise and encounters
 
-Every room and corridor segment has a hidden noise meter from 0 to 10. Loud actions fill it, time drains it, and a loud place is where aliens come out.
+Every room and corridor has a hidden noise meter from 0 to 10. Loud actions fill it, time drains it, and a loud place is where aliens come out.
 
 **Noise per action**
 
@@ -379,7 +381,7 @@ An **ammo box** fully reloads one pistol, rifle or shotgun in 2 s. The Armory lo
 | Rag + Duct tape | Bandage |
 | Battery + Handheld scanner | Scanner with 2 more charges |
 
-**Searching.** Shuffled rooms have 2-3 containers (Storage has 6); fixed rooms and corridor segments have 1 each. Each search takes 2 s, makes 1 noise and draws one card from a shared loot deck. Containers beyond the deck are empty.
+**Searching.** Shuffled rooms have 2-3 containers (Storage has 6); fixed rooms and corridors have 1 each. Each search takes 2 s, makes 1 noise and draws one card from a shared loot deck. Containers beyond the deck are empty.
 
 | Loot card | 3 players | 4-5 players | 6 players |
 | --- | --- | --- | --- |
@@ -454,7 +456,7 @@ There are two ways out. A pod is a sure escape if you can reach and launch it. C
 
 1. Everyone still awake aboard dies.
 2. If the self-destruct is running or integrity is 0, the ship is destroyed and every sleeper dies.
-3. If either engine is damaged, or the course is not Earth, the ship is lost and every sleeper dies.
+3. If any engine is damaged, or the course is not Earth, the ship is lost and every sleeper dies.
 4. If the Cryo Bay has an alien in it, is on fire or is malfunctioning, every sleeper dies.
 5. Every sleeper's contamination cards are revealed, and a sleeper holding an infected card dies. Pod escapees are not checked.
 6. Each survivor's committed objective is checked, and the end screen shows everyone's objective, fate and result.
@@ -482,7 +484,7 @@ The rules above are fixed; the numbers will change after playtests. Below are th
 | Door locks last 60 s | Stops one player trapping another for the whole match | Locks last until undone |
 | Grenades wound the thrower too | Makes using explosives a real decision | The thrower is safe |
 | A power cell unlocks the pods | Gives the endgame a two-handed carry mission | Pods are always unlocked |
-| Two engines, at least one starting damaged | Guarantees repair work for sleepers | One engine, or three like the board game |
+| Three engines, at least one starting damaged | A bigger repair job; guarantees repair work for sleepers | Two engines, or one |
 | Course options Earth, Mars Station, Deep Space | Only Earth keeps sleepers alive, and the Quarantine mission wants anything else, so the course is contested | Earth only |
 | Bridge shows how many crew are alive | Gives some information without breaking the personal map | No crew count at all |
 
@@ -491,4 +493,4 @@ The rules above are fixed; the numbers will change after playtests. Below are th
 1. **Every number lives in data, not code.** Keep a tuning resource (for example `res://data/tuning.tres`) and read every timer, speed, chance and count from it.
 2. **Content is data.** Rooms, items, recipes, alien types, objectives and the loot deck are each Godot `Resource` files, so a new item or objective needs no new code.
 3. **The host keeps all secrets.** The pool, loot deck, infection, objectives, engine states, course and noise meters exist only on the host. Clients get only what their own character can see.
-4. **Everything is room-based.** Each room and corridor segment is an `Area3D` zone with its own noise meter, fire state, breach state, power section and vent. Explosions, fire damage and venting hit everything inside a zone.
+4. **Everything is room-based.** Each room and corridor is an `Area3D` zone with its own noise meter, fire state, breach state, power section and vent. Explosions, fire damage and venting hit everything inside a zone.

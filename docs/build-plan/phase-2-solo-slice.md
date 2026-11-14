@@ -1662,9 +1662,93 @@ func randomize_start() -> void:
   short `jump_time` to test) shows "Left behind at the jump".
 - Crawlers appear about once a minute after 1:30, never more than two.
 
+## M2.8 The ship's room network
+
+*Added 13 Nov 2026 (D20); reworked 14 Nov (three engines, D21) and 15 Nov
+2026 after the owner sent a ship diagram and asked for the layout to match it
+(D22). Built; the code is in the repo.*
+*Concepts:* data-driven layouts, convex polygons, building a node tree in code.
+
+The ship is **21 rooms joined by 28 corridors**, arranged like the owner's
+diagram: the Bridge (a rounded cockpit) at the front, the Cryo Bay (a tall
+oval) in the middle, three engines (D shapes) in a column at the back, and 16
+hexagons between them in rings and strings. Rooms have 2 to 5 doors and the
+corridors make loops. Our names and look stay ours; only the arrangement
+follows the diagram. Every corridor is a place of its own for noise and
+encounters.
+
+### How it is made
+
+1. **`tools/make_ship_layout.py`** holds the diagram as numbers (a pixel
+   position per room, which rooms are linked, the room shapes). It picks the
+   wall of each room every corridor leaves by, routes each corridor (a short
+   straight stub out of each door, then a run between the stubs), checks that
+   no corridor cuts through a room or runs into another, and writes
+   **`scripts/data/ship_layout_data.gd`** (`SHAPES`, `SLOTS`, `LINKS`).
+   Run it with `python tools/make_ship_layout.py --draw layout.png` to see a
+   picture. Hand-fix a route with the `OVERRIDES` table in the tool.
+2. **`ShipLayout`** (a Resource, `data/ship_layout.tres`) keeps the sizes
+   (wall thickness, door size, room height) and reads the data.
+3. **`RoomGeometry`** has the polygon maths (walls, normals, corner overlap,
+   prism points and mesh).
+4. **`ShipBuilder`** builds each `Room_<slot>` (floor and ceiling slabs, one
+   wall per polygon side with a doorway where a corridor leaves, zone, search
+   containers, light, furnishing) and each `Link_<a>_<b>` (straight pieces
+   with mitred bends, a zone, a door in the middle of the longest piece, a
+   search container, a light).
+
+Fixed rooms: Bridge, Cryo Bay, Engines A, B and C, Pod Bay (hexagon). The 15
+shuffled slots are `slot_1` to `slot_15`. Power sections: Fore (Bridge, Cryo
+Bay, slots 1 to 6), Mid (slots 7 to 10), Aft (slots 11 to 15, Pod Bay,
+engines). A corridor takes the section of the end nearer the front.
+
+In Phase 2 all 21 rooms are open: `PHASE2_ROOMS` in `match.gd` puts the Medbay
+in slot 3, the Generator in slot 9 and the Armory in slot 11, and every other
+shuffled slot is a **Crew Quarters** (a plain room with 3 search containers,
+`RoomType.is_filler`). M4.5 replaces this with the real shuffle: all 10 room
+types plus 5 Crew Quarters, in random slots.
+
+### Rules for furnishing scenes
+
+- A room is **not turned**: its frame is the ship's, origin at the middle of
+  the floor, floor at y = 0.
+- Any wall can have a doorway, so **keep the lanes** from the middle to every
+  wall clear (1 m each side of the line). In hexagons put props at the six
+  corners (directions 30, 90, 150, 210, 270, 330 degrees from -Z toward +X),
+  radius 3.5 to 5, long axis pointing outward. The Cryo Bay's pods were placed
+  by script so that they miss all five door lanes.
+- Search containers stand 0.8 m from the longest walls that have no doorway.
+- `ShipBuilder._warn_if_outside` (debug builds) warns if a top-level part of
+  a furnishing has its centre within 0.3 m of a wall.
+
+### Owner checks
+
+- Press F5: you start in the tall Cryo Bay in the middle of the ship, among
+  six pods in two columns. It looks big; it has five doors.
+- Walk out of any door: a 2 m wide corridor leads, with bends, to the next
+  room; it has a door in the middle of its longest straight piece. The debug
+  overlay says "Corridor N" in them and names each room.
+- Walk to the Bridge (front, left), an engine room (back, right) and the
+  Pod Bay. The engine rooms are big D-shaped rooms with their flat wall
+  facing the ship; Engine B has doors to the two rooms beside it (slot 15
+  and the Pod Bay) and no door to the Cryo Bay.
+- Bends: floors are continuous and walls close up at every bend, with no
+  gaps and no wall across the way.
+- Doors in corridors open, close, weld and lock (M2.5).
+- *Debug > Visible Navigation*: blue floor in every room and corridor,
+  joined through every doorway; Crawlers still reach you.
+- Stations: Medbay (slot 3), Generator (slot 9), Armory (slot 11), Pod Bay
+  (beside Engine C): all reachable.
+- A full escape still works (power cell from slot 9 to the Pod Bay socket).
+- No "sticks out of its room" warnings in the Output panel.
+
+The ship is about 130 m long. If it feels too big to cross, change
+`METRES_PER_PIXEL` in the tool and rerun it (the rooms stay the same size, the
+corridors shrink).
+
 ### Gate 2
 
-A friend plays for 15 minutes with no help. Afterwards they can tell you
+Play after M2.8, so the friend sees the hexagonal ship. A friend plays for 15 minutes with no help. Afterwards they can tell you
 what they were supposed to do (find the power cell, reach the pods).
 Write what confused them in `docs/playtest-notes.md` and fix the top
 three before Phase 3. Freeze features here: new ideas go in

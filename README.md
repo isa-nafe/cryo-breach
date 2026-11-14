@@ -28,7 +28,16 @@ The first import takes a few seconds while Godot creates its `.godot` folder.
 | Ctrl or C | Crouch (silent, fits under low gaps) |
 | Space | Jump |
 | F | Helmet lamp on/off |
+| Left mouse | Use the item in your main hand (fire the pistol) |
+| Right mouse | Use the item in your off hand |
+| 1 to 4 | Swap the main hand with that slot (0.75 s) |
+| X | Swap hands |
+| G | Drop the main hand item |
+| R | Hold to reload from an ammo box (restarts after death) |
+| E | Use what you are looking at (hold for timed actions) |
+| F8 | Debug: lock the door you are looking at |
 | F3 | Show/hide the debug overlay |
+| F5 / F6 / F7 | Debug: add light wound / serious wound / heal light wounds |
 | Esc | Free the mouse; click the window to take it back |
 
 ## First-run checklist
@@ -37,18 +46,18 @@ These scripts were written and checked with a GDScript parser and linter,
 but not yet run in Godot. Please check each item and write down anything that
 fails in `docs/playtest-notes.md`:
 
-- [ ] The project imports with no red errors in the Output panel.
-- [ ] Pressing F5 starts you in the Cryo Bay, between two rows of pods.
-- [ ] Mouse look works and stops at straight up and straight down.
-- [ ] WASD moves you; the debug overlay shows about 3.5 m/s walking and
+- [x] The project imports with no red errors in the Output panel.
+- [x] Pressing F5 starts you in the Cryo Bay, between two rows of pods.
+- [x] Mouse look works and stops at straight up and straight down.
+- [x] WASD moves you; the debug overlay shows about 3.5 m/s walking and
       5.5 m/s sprinting.
-- [ ] Crouching lowers the camera and shows about 1.8 m/s.
-- [ ] Jumping works; you cannot jump while crouched.
-- [ ] The overlay shows "Cryo Bay" in the room and "Spine corridor,
+- [x] Crouching lowers the camera and shows about 1.8 m/s.
+- [x] Jumping works; you cannot jump while crouched.
+- [x] The overlay shows "Cryo Bay" in the room and "Spine corridor,
       segment 2" in the corridor.
-- [ ] Sprinting raises the zone's noise by 1 every 3 seconds; it then drops
-      by 1 every 15 seconds.
-- [ ] F toggles the helmet lamp; Esc frees the mouse.
+- [*] Sprinting raises the zone's noise by 1 every 3 seconds; it then drops
+	  by 1 every 15 seconds.
+- [x] F toggles the helmet lamp; Esc frees the mouse.
 
 ## Changing numbers
 

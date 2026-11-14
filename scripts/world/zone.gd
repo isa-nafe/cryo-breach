@@ -23,6 +23,19 @@ signal noise_changed(value: float)
 ## Current noise, from 0 to Config.tuning.noise_max.
 var noise: float = 0.0
 
+## Slot id from ShipLayoutData.SLOTS, or a link id for a corridor.
+var slot_id: StringName = &""
+## What kind of room this is, or null for a corridor segment.
+var room_type: RoomType = null
+## The door between this room and the corridor (null for corridor segments).
+var door: Door = null
+## Zones reachable through one door or along the corridor (and by vent).
+var neighbours: Array[Zone] = []
+## Players currently inside.
+var players_inside: Array[PlayerCharacter] = []
+## Aliens currently inside.
+var aliens_inside: Array[Alien] = []
+
 var _drain_timer := 0.0
 
 
@@ -55,13 +68,30 @@ func set_noise(value: float) -> void:
 	noise_changed.emit(noise)
 
 
+## How many awake players are inside (used by the noise director later).
+func get_awake_player_count() -> int:
+	var count := 0
+	for player: PlayerCharacter in players_inside:
+		if is_instance_valid(player) and player.is_awake():
+			count += 1
+	return count
+
+
 func _on_body_entered(body: Node3D) -> void:
 	var player := body as PlayerCharacter
 	if player:
+		players_inside.append(player)
 		player.enter_zone(self)
+	var alien := body as Alien
+	if alien:
+		aliens_inside.append(alien)
 
 
 func _on_body_exited(body: Node3D) -> void:
 	var player := body as PlayerCharacter
 	if player:
+		players_inside.erase(player)
 		player.exit_zone(self)
+	var alien := body as Alien
+	if alien:
+		aliens_inside.erase(alien)

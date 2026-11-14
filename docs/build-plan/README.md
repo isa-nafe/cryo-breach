@@ -99,7 +99,7 @@ the default.
 | D1 | Ship layout (the GDD diagram is not in the exported docs) | Spine corridor along X, fore at -X. Bridge caps the fore end, Pod Bay the aft end. Each of the 5 segments has one room on each side: seg 1 = slots 1, 2; seg 2 = Cryo Bay, slot 3; seg 3 = slots 4, 5; seg 4 = slots 6, 7; seg 5 = Engine A, Engine B. This matches the existing Cryo Bay scene (segment 2, opposite slot 3) and the GDD power sections. | **ask** (compare with the online diagram) |
 | D2 | How rooms are built | Generated in code from data (`ShipLayout` + `RoomType` resources) as box walls with `StaticBody3D` colliders, not hand-made CSG scenes. Room shuffling needs this anyway and it is far more reliable to write without the editor. Each room type has a small furnishing scene for its stations. The hand-made `cryo_bay.tscn` is used only in Phase 1. | decided |
 | D3 | Who moves a player in multiplayer | The owning client moves its own character and syncs the transform; the host owns every rule (wounds, items, doors, aliens, noise, secrets). No client-side prediction to write, no input lag. The cost is that a cheating client could teleport, which is acceptable for a friends game. | **ask** at M3.2 |
-| D4 | The 8 rooms of the Phase 2 slice | Bridge, Cryo Bay, Engine A, Engine B, Pod Bay, Medbay, Armory, Generator. The other 4 slots are generated but sealed. | decided |
+| D4 | The 8 rooms of the Phase 2 slice | Bridge, Cryo Bay, Engines A, B and C, Pod Bay, Medbay, Armory, Generator (changed by D20 and D21: the slice opens slots 1, 5 and 7 so the rooms join up). The other 4 slots are generated but sealed. | decided |
 | D5 | Hand controls (GDD says only "2 hands + 4 slots") | Left mouse uses the main hand, right mouse uses the off hand, `1`-`4` swap a slot with the main hand (0.75 s), `X` swaps hands, `G` drops the main hand item, `E` interacts. | **ask** at M2.4 |
 | D6 | Blank pull vs "meter drops to 3" | On a Blank the meter is halved (not set to 3); zone and ship cooldowns still start. | **ask** at M4.1 |
 | D7 | Encounter at the active cap | Counts as an encounter: meter drops to 3 and cooldowns start, nearest active alien is sent to that zone. | decided |
@@ -112,8 +112,11 @@ the default.
 | D14 | Can a two-handed item go in a slot? | No. It must be carried in both hands or dropped. | **ask** at M2.4 |
 | D15 | How an ammo box is used | Hold R for 2 s with the gun in a hand; the box can be anywhere in the inventory (a two-handed rifle leaves no hand free for it). | **ask** at M2.4 |
 | D16 | How the blind Adult finds players | It hears sprinting within its 20 m hearing range and walking within 6 m; crouch-walking and standing still are silent to it. | **ask** at M4.2 |
-| D17 | Which rooms a fire can spread to | Rooms whose doors open on the same corridor segment, when both doors are open. | **ask** at M4.3 |
+| D17 | Which rooms a fire can spread to | Rooms joined by a corridor to the burning room, when that corridor's door is open (changed for the room network, D20). | **ask** at M4.3 |
 | D18 | Room types are secret until visited | The map UI hides them, but every client receives the room assignment at match start so all peers build the same ship. A modified client could read it. | known gap, revisit in M6.4 |
+| D20 | Room shape and map | The owner wants **hexagonal rooms with 1 to 3 doors each, joined by short corridors, like the board game's map** (not one long corridor). Built in **M2.8** (reworked 14 Nov 2026): 12 rooms (side 6 m) on a hexagonal lattice, 15 corridors of 4 m, each corridor its own noise place with one door in the middle. The arrangement is original, not a copy of the board; the design doc and art brief were updated. The vents, fires and noise rules treat corridors as before. | decided |
+| D21 | Three engines, 13 rooms, special room shapes | The owner chose **three engines** (design doc change: all three must work, at least one starts damaged) and **12 to 14 rooms**, so the ship had 13 (superseded by D22: 21 rooms). The layout is the same every match. The Bridge (a cockpit narrowing to a nose), Cryo Bay (the biggest room) and engines (long) have their own shapes; the shuffled rooms are regular hexagons. A shape is six distances (`ShipLayout.SHAPES`), so every side still faces a corridor direction. The arrangement is original, not a trace of the board. | decided |
+| D22 | Layout copied from the owner's diagram | The owner sent a ship diagram (cockpit, hibernatorium, 3 engines, 16 hexagons, winding corridors) and asked for the layout to match it. Built in M2.8 (third version, 15 Nov 2026): **21 rooms, 28 corridors**, room positions measured from the diagram, bent corridors, per-room polygon shapes (Bridge = cockpit blob, Cryo Bay = tall oval, engines = D shapes). Our names and look stay ours (Bridge, Cryo Bay); only the arrangement follows the diagram. The Pod Bay is the hexagon beside Engine C. **15 shuffled slots** are filled with all 10 room types plus 5 Crew Quarters (design doc changed: no more 'two of five optional rooms'). Rooms have 2 to 5 doors. | decided |
 | D19 | Reconnecting within 5 minutes | The 5-minute death timer is built in M3.5; rejoining mid-match is attempted last and may be deferred. | known gap, revisit in M6.4 |
 
 ## 4. Target architecture
@@ -272,21 +275,22 @@ its *Owner checks* in Godot.
 
 **Phase 1: first fight** (`phase-1-first-fight.md`)
 
-- [ ] M1.0 Owner runs the Week 1 first-run checklist; fix what fails
-- [ ] M1.1 Layers, HealthComponent, target dummy, hitscan pistol
-- [ ] M1.2 Wound system, HUD, death and restart
-- [ ] M1.3 Navigation mesh and the first Crawler
+- [x] M1.0 Owner runs the Week 1 first-run checklist; fix what fails
+- [x] M1.1 Layers, HealthComponent, target dummy, hitscan pistol
+- [x] M1.2 Wound system, HUD, death and restart
+- [x] M1.3 Navigation mesh and the first Crawler
 - [ ] Gate 1: a stranger can move, shoot and die to the Crawler in under 2 minutes
 
 **Phase 2: solo vertical slice** (`phase-2-solo-slice.md`)
 
-- [ ] M2.1 GameState, match scene, match clock
-- [ ] M2.2 Ship generated from data (12 slots, 8 open rooms, zones, navigation)
-- [ ] M2.3 Interaction system (look, prompt, hold to use)
-- [ ] M2.4 Items and inventory (2 hands + 4 slots), pickups, HUD
-- [ ] M2.5 Doors (open, closed, locked, welded), keycard, welder
-- [ ] M2.6 Loot deck, search containers, room stations for the slice
+- [x] M2.1 GameState, match scene, match clock
+- [x] M2.2 Ship generated from data (12 slots, 8 open rooms, zones, navigation)
+- [x] M2.3 Interaction system (look, prompt, hold to use)
+- [x] M2.4 Items and inventory (2 hands + 4 slots), pickups, HUD
+- [x] M2.5 Doors (open, closed, locked, welded), keycard, welder
+- [x] M2.6 Loot deck, search containers, room stations for the slice
 - [ ] M2.7 Escape pods, power cell, hyperspace jump, end screen
+- [x] M2.8 Room network laid out like the owner's diagram: 21 rooms, 28 corridors (decisions D20, D21, D22)
 - [ ] Gate 2: a friend plays 15 minutes solo and can say what they were meant to do
 
 **Phase 3: co-op networking** (`phase-3-networking.md`)

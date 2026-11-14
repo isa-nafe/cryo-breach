@@ -8,6 +8,10 @@ extends CharacterBody3D
 
 ## Emitted whenever this character makes noise in its current zone.
 signal made_noise(amount: float)
+## Emitted once when this character dies.
+signal died
+## Emitted when something wants to tell this player a short text.
+signal message_shown(text: String)
 
 ## The node that provides this character's InputState.
 @export var input_source_path: NodePath = ^"PlayerInput"
@@ -16,6 +20,9 @@ signal made_noise(amount: float)
 var current_zone: Zone = null
 var is_crouching := false
 var is_sprinting := false
+var is_dead := false
+## The escape pod this character is sitting in, or null.
+var seated_pod: EscapePod = null
 
 var _tuning: Tuning
 var _capsule: CapsuleShape3D
@@ -25,6 +32,10 @@ var _sprint_noise_timer := 0.0
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var lamp: SpotLight3D = $Head/Camera3D/HelmetLamp
+@onready var wounds: PlayerWounds = $Wounds
+@onready var interactor: PlayerInteractor = $Interactor
+@onready var inventory: Inventory = $Inventory
+@onready var item_user: ItemUser = $ItemUser
 @onready var input_source: PlayerInput = get_node(input_source_path)
 @onready var _collision: CollisionShape3D = $CollisionShape3D
 
@@ -33,6 +44,9 @@ func _ready() -> void:
 	_tuning = Config.tuning
 	_capsule = _collision.shape as CapsuleShape3D
 	_set_body_height(_tuning.stand_height)
+	wounds.died.connect(_on_wounds_died)
+	wounds.changed.connect(_on_wounds_changed)
+	GameState.register_player(self)
 
 
 func _process(_delta: float) -> void:
@@ -48,10 +62,22 @@ func _process(_delta: float) -> void:
 
 func _physics_process(delta: float) -> void:
 	var input := input_source.poll()
-	_update_crouch(input.crouch, delta)
+	if seated_pod != null and not is_dead:
+		# Sitting in a pod: no walking, the pod reads the E key.
+		velocity = Vector3.ZERO
+		seated_pod.update_seated(self, input, delta)
+		if input.toggle_lamp:
+			lamp.visible = not lamp.visible
+		input.clear_one_shots()
+		return
+	if not is_dead:
+		_update_crouch(input.crouch, delta)
 	_update_movement(input, delta)
 	move_and_slide()
 	_update_noise(delta)
+	if not is_dead:
+		interactor.update(self, input.interact_held, delta)
+		item_user.update(input, delta)
 	if input.toggle_lamp:
 		lamp.visible = not lamp.visible
 	input.clear_one_shots()
@@ -61,6 +87,7 @@ func _physics_process(delta: float) -> void:
 func emit_noise(amount: float) -> void:
 	if current_zone:
 		current_zone.add_noise(amount)
+	get_tree().call_group(&"aliens", &"hear_noise", global_position, amount)
 	made_noise.emit(amount)
 
 
@@ -80,6 +107,18 @@ func exit_zone(zone: Zone) -> void:
 		current_zone = _zones.back()
 
 
+## True while the character is walking around the ship (not dead).
+## Sleeping and escaped states are added in Phase 5.
+func is_awake() -> bool:
+	return not is_dead
+
+
+## Shows a short message on this player's HUD. Phase 3 sends it only to the
+## owner of the character.
+func show_message(text: String) -> void:
+	message_shown.emit(text)
+
+
 ## A short description of what the character is doing, for the debug HUD.
 func get_state_name() -> String:
 	if not is_on_floor():
@@ -93,6 +132,29 @@ func get_state_name() -> String:
 	return "Standing"
 
 
+## How much wider than normal this character's weapon spread is.
+func get_spread_multiplier() -> float:
+	return wounds.get_spread_multiplier()
+
+
+## A broken arm takes a hand away: whatever it held falls to the floor.
+func _on_wounds_changed() -> void:
+	for stack: ItemStack in inventory.set_usable_hands(wounds.get_usable_hands()):
+		item_user.drop_stack(stack)
+
+
+func _on_wounds_died() -> void:
+	is_dead = true
+	if seated_pod != null:
+		seated_pod.release(self)
+	input_source.enabled = false
+	input_source.state.release_all()
+	# Drop the camera to the floor so death reads clearly.
+	var fall := create_tween()
+	fall.tween_property(head, "position:y", _tuning.dead_eye_height, 0.6)
+	died.emit()
+
+
 func _update_movement(input: InputState, delta: float) -> void:
 	if not is_on_floor():
 		velocity += get_gravity() * delta
@@ -100,13 +162,16 @@ func _update_movement(input: InputState, delta: float) -> void:
 		velocity.y = _tuning.jump_velocity
 
 	var wants_to_move := input.move.length() > 0.1
-	is_sprinting = input.sprint and wants_to_move and not is_crouching and is_on_floor()
+	is_sprinting = (
+		input.sprint and wants_to_move and not is_crouching and is_on_floor() and wounds.can_sprint()
+	)
 
 	var speed := _tuning.walk_speed
 	if is_crouching:
 		speed = _tuning.crouch_speed
 	elif is_sprinting:
 		speed = _tuning.sprint_speed
+	speed *= wounds.get_speed_multiplier()
 
 	# The body only turns left and right, so this direction is always flat.
 	var direction := transform.basis * Vector3(input.move.x, 0.0, -input.move.y)

@@ -530,7 +530,7 @@ Terminals never show who used them.
 
 | Terminal | Room | Options | Time | Notes |
 | --- | --- | --- | --- | --- |
-| Engine console | Engine A / B | Check | 2 s | Private answer: "working" or "damaged" |
+| Engine console | Engine A / B / C | Check | 2 s | Private answer: "working" or "damaged" |
 | | | Repair (needs toolkit in hand) | 15 s | +2 noise; sets working |
 | | | Damage (needs toolkit in hand) | 10 s | +2 noise; sets damaged. To everyone else it must look and sound exactly like a repair: same bar, same sound, same noise |
 | Navigation console | Bridge | Check course | 2 s | Private answer |

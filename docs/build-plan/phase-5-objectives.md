@@ -421,7 +421,7 @@ extends RefCounted
 
 ## Self-destruct went off or is still running, or integrity reached 0.
 var ship_destroyed := false
-## Both engines work and neither engine room is malfunctioning.
+## All three engines work and no engine room is malfunctioning.
 var engines_working := false
 var course_is_earth := false
 ## An alien is in the Cryo Bay, or it is burning or malfunctioning.

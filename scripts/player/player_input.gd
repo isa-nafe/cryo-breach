@@ -47,6 +47,16 @@ func poll() -> InputState:
 		state.sprint = Input.is_action_pressed("sprint")
 		state.crouch = Input.is_action_pressed("crouch")
 		state.fire = Input.is_action_pressed("fire")
+		state.interact_held = Input.is_action_pressed("interact")
+		state.fire_off = Input.is_action_pressed("use_off_hand")
+		state.reload_held = Input.is_action_pressed("reload")
+		for slot in 4:
+			if Input.is_action_just_pressed("slot_%d" % (slot + 1)):
+				state.slot_press = slot + 1
+		if Input.is_action_just_pressed("swap_hands"):
+			state.swap_hands = true
+		if Input.is_action_just_pressed("drop"):
+			state.drop = true
 		if Input.is_action_just_pressed("jump"):
 			state.jump = true
 	else:

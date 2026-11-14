@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RoomType" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/room_type.gd" id="1_room"]
+
+[resource]
+script = ExtResource("1_room")
+id = &"quarters"
+display_name = "Crew Quarters"
+is_fixed = false
+is_essential = false
+is_filler = true
+search_spots = 3
+light_color = Color(1, 0.85, 0.65, 1)

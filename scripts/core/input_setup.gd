@@ -18,12 +18,20 @@ const KEY_ACTIONS := {
 	"toggle_lamp": [KEY_F],
 	"toggle_debug": [KEY_F3],
 	"pause": [KEY_ESCAPE],
+	"restart": [KEY_R],
+	"reload": [KEY_R],
+	"slot_1": [KEY_1],
+	"slot_2": [KEY_2],
+	"slot_3": [KEY_3],
+	"slot_4": [KEY_4],
+	"swap_hands": [KEY_X],
+	"drop": [KEY_G],
 }
 
 ## Action name -> mouse button.
 const MOUSE_ACTIONS := {
 	"fire": MOUSE_BUTTON_LEFT,
-	"aim": MOUSE_BUTTON_RIGHT,
+	"use_off_hand": MOUSE_BUTTON_RIGHT,
 }
 
 

@@ -14,20 +14,41 @@ keep changes small enough to test in one sitting.
 - `docs/build-plan/README.md`: the milestone-by-milestone build plan
   with code for every phase. **Start every session there**: build the
   first unticked milestone in its index, and follow its working rules.
+- `docs/art-audio-brief/`: instructions for the graphic designer and sound
+  designer (asset lists, specs, tools). Update it when rules or rooms change.
 - The live versions of both docs (with diagrams) are on claude.ai; these
   Markdown copies were exported on 27 Oct 2026 and may fall behind. Ask the
   owner to re-export if a rule seems out of date.
 
 ## Where we are
 
-- **Week 1 (Phase 1) is done but untested.** The first-person controller,
-  grey-box Cryo Bay, zone noise and debug HUD were written and checked with
-  gdtoolkit, but have not yet been run in Godot. The README lists a first-run
-  checklist; confirm it passes before building on top of it.
-- **Next: milestones M1.0 to M1.3** in `docs/build-plan/` (Week 2 of
-  the development plan). Hitscan pistol, reusable `HealthComponent` (aliens only;
-  players use the wound system), baked `NavigationRegion3D`, the first
-  Crawler, a HUD and a restart-on-death flow.
+- **Phase 1 (M1.0-M1.3) passed the owner's checks in Godot.** Gate 1 (a
+  stranger plays 15 minutes) is still open.
+- **M2.1 passed the owner's checks.** `scenes/match.tscn` is the main
+  scene; `scenes/main.tscn` is kept as the Phase 1 test scene with the
+  Crawler (the match scene has no aliens until M2.7).
+- **M2.2 (generated ship), M2.3 (interaction) and M2.4 (items and
+  inventory) passed the owner's checks.**
+- **M2.5 (doors) is accepted.**
+- **M2.6 (loot, crates, Medbay/Armory/Generator stations) is accepted.**
+  The addons/ folder is not ours (a Godot plugin the owner installed); lint
+  with `git ls-files -co --exclude-standard '*.gd' | grep -v '^addons/'`.
+- **M2.7 is written but untested:** `ShipState` (in `GameState`, host only),
+  Pod Bay socket and 3 single-seat escape pods, launch countdown, end screen
+  (pauses the game; R restarts), `TimerDirector` (temporary Crawler spawner,
+  deleted in M4.1) and `match.spawn_alien`. A launched pod ends the match.
+- **M2.8 (room network) is written but untested.** The ship follows the
+  owner's diagram (decision D22): 21 rooms and 28 corridors, 15 shuffled
+  slots, three engines. The layout comes from `tools/make_ship_layout.py`,
+  which writes `scripts/data/ship_layout_data.gd`; `ShipBuilder` builds
+  polygon rooms and bent corridors from it. In Phase 2 all rooms are open
+  (extras are Crew Quarters). The design doc and art brief copies were
+  updated: ask the owner to re-export the live design doc. Only the
+  arrangement follows the diagram; names and look stay ours.
+- A stray file `C:\AppData_placeholder\unused.txt` was created by mistake
+  outside the project; the owner can delete that folder.
+- **Next:** owner checks M2.7 and M2.8, then **Gate 2** (a friend plays 15
+  minutes solo), then Phase 3 (M3.1).
 
 ## Architecture rules (from the design doc; follow them in every change)
 
