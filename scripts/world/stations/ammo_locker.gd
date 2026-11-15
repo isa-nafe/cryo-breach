@@ -31,6 +31,8 @@ func _on_interact(player: PlayerCharacter) -> void:
 	var stack := player.inventory.hands[hand]
 	stack.charges = stack.data.weapon.capacity
 	refills_left -= 1
+	if Net.is_networked():
+		_rpc_refills.rpc(refills_left)
 	# Telling the inventory it changed rebuilds the gun in the player's hand.
 	player.inventory.changed.emit()
 	player.show_message("Gun refilled (%d refills left)" % refills_left)
@@ -45,3 +47,8 @@ func _find_gun_hand(player: PlayerCharacter) -> int:
 		if stack.charges < stack.data.weapon.capacity:
 			return hand
 	return -1
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_refills(count: int) -> void:
+	refills_left = count

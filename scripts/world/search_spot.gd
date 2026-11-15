@@ -45,7 +45,7 @@ func get_blocked_prompt(_player: PlayerCharacter) -> String:
 
 
 func _on_interact(player: PlayerCharacter) -> void:
-	enabled = false
+	set_enabled_everywhere(false)
 	var id := GameState.loot_deck.draw()
 	if id == &"":
 		player.show_message("Empty")

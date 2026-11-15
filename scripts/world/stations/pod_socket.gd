@@ -32,7 +32,18 @@ func get_item_seconds(_player: PlayerCharacter, _item: ItemData) -> float:
 
 func _on_item_used(player: PlayerCharacter, _item: ItemData, hand: int) -> void:
 	player.inventory.consume_from_hand(hand)
-	GameState.ship_state.pods_unlocked = true
-	# Phase 3: tell every client, so the pod lights change for everyone.
-	get_tree().call_group(&"escape_pods", &"on_unlocked")
+	_unlock_pods()
+	# Pods being unlocked is public, so every machine hears about it.
+	if Net.is_networked():
+		_rpc_unlocked.rpc()
 	player.show_message("Escape pods unlocked")
+
+
+func _unlock_pods() -> void:
+	GameState.ship_state.pods_unlocked = true
+	get_tree().call_group(&"escape_pods", &"on_unlocked")
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_unlocked() -> void:
+	_unlock_pods()

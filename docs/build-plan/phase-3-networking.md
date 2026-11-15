@@ -576,6 +576,25 @@ launch countdowns.
 `{"stack": ItemStack.to_dict(), "position"}`. Taking a pickup frees it on
 the host.
 
+### What was built (and where it differs from the plan above)
+
+- Doors are named `Door_<slot a>_<slot b>` (one per corridor); search spots,
+  rooms and corridors already had fixed names. Station nodes keep the names
+  from their furnishing scenes.
+- `Interactable.request_interact` / `request_use_item` are RPCs on the object
+  itself; the host finds the player from the sender. The client's interactor
+  now runs, so doors, crates, stations and pickups all work from a client.
+- State sent from the host: door (open, welded, lock seconds), `enabled`
+  (`set_enabled_everywhere`, used by search spots), ammo locker refills, gun
+  rack taken, pods unlocked (also copied into `GameState.ship_state` on clients,
+  so prompts are right), pod seats and launch countdown, a pickup's stack count.
+- Pickups go through `ItemSpawner`, aliens through `AlienSpawner`; solo play
+  adds them directly. The Crawler scene has a synchronizer for position and
+  turn; its AI only runs on the host.
+- `PlayerCharacter.host_place` moves a character (to a pod seat or out of it).
+  The owner's machine moves its own body, so the host sends it the place.
+- The temporary "client walks through doors" rule from M3.2 is gone.
+
 ### Owner checks
 
 - A Crawler is in the same place in both windows and attacks whichever

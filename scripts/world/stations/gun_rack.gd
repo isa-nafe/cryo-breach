@@ -22,9 +22,16 @@ func get_blocked_prompt(_player: PlayerCharacter) -> String:
 
 func _on_interact(player: PlayerCharacter) -> void:
 	_taken = true
+	if Net.is_networked():
+		_rpc_taken.rpc()
 	var stack := ItemStack.create(Config.get_item(&"pistol"))
 	if player.inventory.add(stack):
 		player.show_message("Took the pistol")
 	else:
 		Pickup.spawn(get_tree(), stack, global_position)
 		player.show_message("No room: the pistol is on the floor")
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_taken() -> void:
+	_taken = true

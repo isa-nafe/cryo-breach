@@ -19,6 +19,10 @@ static func create(item_stack: ItemStack) -> Pickup:
 ## Puts a pickup on the floor at `at`, in the scene's "Items" node if it
 ## has one.
 static func spawn(tree: SceneTree, item_stack: ItemStack, at: Vector3) -> Pickup:
+	# In a network game the match's ItemSpawner makes the pickup on every machine.
+	var spawner := tree.current_scene.get_node_or_null(^"ItemSpawner") as MultiplayerSpawner
+	if spawner != null and Net.is_networked():
+		return spawner.spawn({"stack": item_stack.to_dict(), "position": at}) as Pickup
 	var pickup := create(item_stack)
 	var parent: Node = tree.current_scene.get_node_or_null(^"Items")
 	if parent == null:
@@ -69,3 +73,11 @@ func _on_interact(player: PlayerCharacter) -> void:
 	# `add` puts the whole stack in (true) or tops up what it can (false).
 	if player.inventory.add(stack):
 		queue_free()
+	elif Net.is_networked():
+		# Only part fitted: everyone should see what is left.
+		_rpc_count.rpc(stack.count)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_count(count: int) -> void:
+	stack.count = count

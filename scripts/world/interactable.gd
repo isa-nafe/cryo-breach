@@ -59,10 +59,23 @@ func get_item_seconds(_player: PlayerCharacter, _item: ItemData) -> float:
 	return 0.0
 
 
-## Called on the acting player's machine when the item hold completes.
+## Called on the acting player's machine when the item hold completes. The
+## host does it at once; a client asks the host (the node has the same path on
+## every machine, so the RPC finds it).
 func request_use_item(player: PlayerCharacter, hand: int) -> void:
-	# Phase 3: send an RPC to the host instead when not the server.
-	_host_use_item(player, hand)
+	if multiplayer.is_server():
+		_host_use_item(player, hand)
+	else:
+		_rpc_use_item.rpc_id(1, hand)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_use_item(hand: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var player := GameState.get_player_by_peer(multiplayer.get_remote_sender_id())
+	if player != null and hand >= Inventory.MAIN_HAND and hand <= Inventory.OFF_HAND:
+		_host_use_item(player, hand)
 
 
 ## Host only: checks the request and applies it.
@@ -83,8 +96,19 @@ func _on_item_used(_player: PlayerCharacter, _item: ItemData, _hand: int) -> voi
 
 ## Called on the acting player's machine when the hold completes.
 func request_interact(player: PlayerCharacter) -> void:
-	# Phase 3: send an RPC to the host instead when not the server.
-	_host_interact(player)
+	if multiplayer.is_server():
+		_host_interact(player)
+	else:
+		_rpc_interact.rpc_id(1)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_interact() -> void:
+	if not multiplayer.is_server():
+		return
+	var player := GameState.get_player_by_peer(multiplayer.get_remote_sender_id())
+	if player != null:
+		_host_interact(player)
 
 
 ## Host only: checks the request and applies it.
@@ -100,6 +124,18 @@ func _host_interact(player: PlayerCharacter) -> void:
 ## Override in subclasses: what the interaction does.
 func _on_interact(_player: PlayerCharacter) -> void:
 	pass
+
+
+## Host only: turns this on or off for everyone.
+func set_enabled_everywhere(value: bool) -> void:
+	enabled = value
+	if Net.is_networked():
+		_rpc_set_enabled.rpc(value)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_set_enabled(value: bool) -> void:
+	enabled = value
 
 
 func _is_in_reach(player: PlayerCharacter) -> bool:

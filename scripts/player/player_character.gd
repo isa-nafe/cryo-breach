@@ -63,10 +63,6 @@ func _ready() -> void:
 	_visor.visible = not is_local()
 	if is_local():
 		camera.make_current()
-		if not multiplayer.is_server():
-			# Doors are not synced until M3.4, so a client could never leave
-			# its room. Until then a client's character walks through them.
-			collision_mask &= ~Layers.DOORS
 	if multiplayer.is_server():
 		# Only the host changes wounds and inventories; it tells the owner.
 		wounds.died.connect(_on_wounds_died)
@@ -125,11 +121,9 @@ func _local_step(delta: float) -> void:
 	_update_movement(input, delta)
 	move_and_slide()
 	if not is_dead:
-		# Items work from every machine (their changes are requests to the
-		# host). Interacting with doors, crates and stations stays host-only
-		# until M3.4 gives those objects the same names on every machine.
-		if multiplayer.is_server():
-			interactor.update(self, input.interact_held, delta)
+		# Interacting and using items work from every machine; what they
+		# change is a request to the host.
+		interactor.update(self, input.interact_held, delta)
 		item_user.update(input, delta)
 	if input.toggle_lamp:
 		lamp.visible = not lamp.visible
@@ -184,6 +178,16 @@ func show_message(text: String) -> void:
 		message_shown.emit(text)
 	elif multiplayer.is_server():
 		_rpc_message.rpc_id(peer_id, text)
+
+
+## Host only: puts the character at a place, in a pod seat or not. The owner's
+## machine moves the body, so the host tells it too.
+func host_place(at: Vector3, pod: EscapePod) -> void:
+	global_position = at
+	velocity = Vector3.ZERO
+	seated_pod = pod
+	if not is_local() and Net.is_networked():
+		_rpc_place.rpc_id(peer_id, at, pod.get_path() if pod != null else NodePath())
 
 
 ## Host only: the flash and sound of a shot, for everyone who cannot see this
@@ -259,6 +263,13 @@ func _rpc_request_state() -> void:
 func _rpc_private_state(wound_state: Dictionary, inventory_state: Dictionary) -> void:
 	wounds.apply_dict(wound_state)
 	inventory.apply_dict(inventory_state)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_place(at: Vector3, pod_path: NodePath) -> void:
+	global_position = at
+	velocity = Vector3.ZERO
+	seated_pod = get_node_or_null(pod_path) as EscapePod
 
 
 @rpc("authority", "call_remote", "reliable")

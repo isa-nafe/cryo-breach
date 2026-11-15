@@ -29,6 +29,8 @@ var _lost_sight_timer := 0.0
 
 
 func _ready() -> void:
+	# Only the host thinks; clients get the position and turn from a synchronizer.
+	set_physics_process(multiplayer.is_server())
 	add_to_group(&"aliens")
 	health.max_health = data.max_health
 	health.revive()

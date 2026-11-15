@@ -40,3 +40,9 @@ layout = ExtResource("4_layout")
 
 [node name="PlayerSpawner" type="MultiplayerSpawner" parent="."]
 spawn_path = NodePath("../Players")
+
+[node name="AlienSpawner" type="MultiplayerSpawner" parent="."]
+spawn_path = NodePath("../Aliens")
+
+[node name="ItemSpawner" type="MultiplayerSpawner" parent="."]
+spawn_path = NodePath("../Items")

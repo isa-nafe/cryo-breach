@@ -37,7 +37,13 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if not multiplayer.is_server() or not launching or occupant == null:
+	if not launching:
+		return
+	if not multiplayer.is_server():
+		# Clients only count the countdown down for the prompt.
+		launch_left = maxf(launch_left - delta, 0.0)
+		return
+	if occupant == null:
 		return
 	launch_left -= delta
 	var second := ceili(launch_left)
@@ -99,29 +105,35 @@ func update_seated(player: PlayerCharacter, input: InputState, delta: float) -> 
 
 ## Climb out of the seat.
 func request_exit(player: PlayerCharacter) -> void:
-	# Phase 3: send an RPC to the host instead when not the server.
-	_host_exit(player)
+	if multiplayer.is_server():
+		_host_exit(player)
+	else:
+		_rpc_exit.rpc_id(1)
 
 
 ## Start the launch countdown, or abort it if it is running.
 func request_toggle_launch(player: PlayerCharacter) -> void:
-	# Phase 3: send an RPC to the host instead when not the server.
-	_host_toggle_launch(player)
+	if multiplayer.is_server():
+		_host_toggle_launch(player)
+	else:
+		_rpc_toggle_launch.rpc_id(1)
 
 
-## Host only: lets go of the seat (used when the occupant dies).
+## Lets go of the seat (used when the occupant dies).
 func release(player: PlayerCharacter) -> void:
+	if player.seated_pod == self:
+		player.seated_pod = null
 	if occupant == player:
 		occupant = null
 		launching = false
-		player.seated_pod = null
+		if multiplayer.is_server():
+			_host_broadcast()
 
 
 func _on_interact(player: PlayerCharacter) -> void:
 	occupant = player
-	player.seated_pod = self
-	player.velocity = Vector3.ZERO
-	player.global_position = global_position * Vector3(1.0, 0.0, 1.0) + Vector3.UP * SEAT_LIFT
+	player.host_place(global_position * Vector3(1.0, 0.0, 1.0) + Vector3.UP * SEAT_LIFT, self)
+	_host_broadcast()
 	_hold_time = 0.0
 	_hold_used = true
 	player.show_message("Seated. Tap E to climb out, hold E to launch")
@@ -131,13 +143,13 @@ func _host_exit(player: PlayerCharacter) -> void:
 	if occupant != player or launching or launched:
 		return
 	occupant = null
-	player.seated_pod = null
 	# The pod's parent is the room's furnishing, centred on the room.
 	var middle := (get_parent() as Node3D).global_position
 	var toward_middle := middle - global_position
 	toward_middle.y = 0.0
 	var out := toward_middle.normalized() * Config.tuning.pod_exit_distance
-	player.global_position = global_position * Vector3(1.0, 0.0, 1.0) + out + Vector3.UP * SEAT_LIFT
+	player.host_place(global_position * Vector3(1.0, 0.0, 1.0) + out + Vector3.UP * SEAT_LIFT, null)
+	_host_broadcast()
 
 
 func _host_toggle_launch(player: PlayerCharacter) -> void:
@@ -146,16 +158,19 @@ func _host_toggle_launch(player: PlayerCharacter) -> void:
 	if launching:
 		launching = false
 		player.show_message("Launch aborted")
+		_host_broadcast()
 		return
 	launching = true
 	launch_left = Config.tuning.pod_launch_seconds
 	_last_second_shown = -1
 	player.emit_noise(Config.tuning.pod_launch_noise)
+	_host_broadcast()
 
 
 func _launch() -> void:
 	launching = false
 	launched = true
+	_host_broadcast()
 	# Phase 2: one launched pod ends the match. M5.3 makes occupants "escaped".
 	GameState.end_match(&"escaped")
 
@@ -164,3 +179,37 @@ func _set_light(unlocked: bool) -> void:
 	var material := _mesh.get_surface_override_material(0) as StandardMaterial3D
 	if material:
 		material.albedo_color = UNLOCKED_COLOR if unlocked else LOCKED_COLOR
+
+
+## Host only: tells everyone who sits in this pod and how the launch is going.
+func _host_broadcast() -> void:
+	if not Net.is_networked():
+		return
+	var occupant_peer := occupant.peer_id if occupant != null else 0
+	_rpc_state.rpc(occupant_peer, launching, launch_left, launched)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_state(occupant_peer: int, is_launching: bool, seconds: float, is_launched: bool) -> void:
+	occupant = GameState.get_player_by_peer(occupant_peer)
+	launching = is_launching
+	launch_left = seconds
+	launched = is_launched
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_exit() -> void:
+	if not multiplayer.is_server():
+		return
+	var player := GameState.get_player_by_peer(multiplayer.get_remote_sender_id())
+	if player != null:
+		_host_exit(player)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_toggle_launch() -> void:
+	if not multiplayer.is_server():
+		return
+	var player := GameState.get_player_by_peer(multiplayer.get_remote_sender_id())
+	if player != null:
+		_host_toggle_launch(player)

@@ -57,13 +57,16 @@ static func create(width: float, height: float, thickness: float, along_x: bool)
 func _ready() -> void:
 	super._ready()
 	add_to_group(&"doors")
+	if multiplayer.is_server():
+		state_changed.connect(_host_broadcast)
 
 
+## Every machine counts the lock down (for the prompt); the host announces the end.
 func _physics_process(delta: float) -> void:
-	if lock_seconds <= 0.0 or not multiplayer.is_server():
+	if lock_seconds <= 0.0:
 		return
 	lock_seconds = maxf(lock_seconds - delta, 0.0)
-	if lock_seconds <= 0.0:
+	if lock_seconds <= 0.0 and multiplayer.is_server():
 		state_changed.emit()
 
 
@@ -110,7 +113,7 @@ func unlock() -> void:
 	state_changed.emit()
 
 
-## Host only: opens or closes the door. Phase 3 syncs this to clients.
+## Opens or closes the door. The host decides; clients get the result in `_rpc_state`.
 func set_open(open: bool) -> void:
 	if is_open == open:
 		return
@@ -138,4 +141,18 @@ func _on_interact(_player: PlayerCharacter) -> void:
 
 func _on_item_used(_player: PlayerCharacter, _item: ItemData, _hand: int) -> void:
 	is_welded = not is_welded
+	state_changed.emit()
+
+
+## Host only: tells everyone the whole public state of this door.
+func _host_broadcast() -> void:
+	if Net.is_networked():
+		_rpc_state.rpc(is_open, is_welded, lock_seconds)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_state(open: bool, welded: bool, seconds: float) -> void:
+	is_welded = welded
+	lock_seconds = seconds
+	set_open(open)
 	state_changed.emit()

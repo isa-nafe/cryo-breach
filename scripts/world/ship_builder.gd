@@ -238,6 +238,8 @@ func _build_link(link: Dictionary, number: int) -> void:
 	var long_yaw := atan2(long_direction.x, long_direction.z)
 	var middle := path[longest] + long_direction * longest_length * 0.5
 	var door := Door.create(layout.door_width, layout.door_height, thickness, true)
+	# A fixed name, so the same door has the same path on every machine.
+	door.name = "Door_%s_%s" % [link.a, link.b]
 	door.position = middle
 	door.rotation.y = long_yaw
 	add_child(door)

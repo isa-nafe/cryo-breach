@@ -25,6 +25,8 @@ var _client_label: Label
 
 @onready var _players: Node3D = $Players
 @onready var _player_spawner: MultiplayerSpawner = $PlayerSpawner
+@onready var _alien_spawner: MultiplayerSpawner = $AlienSpawner
+@onready var _item_spawner: MultiplayerSpawner = $ItemSpawner
 @onready var _aliens: Node3D = $Aliens
 @onready var _navigation: NavBaker = $Navigation
 @onready var _ship: ShipBuilder = $Navigation/Ship
@@ -41,6 +43,8 @@ func _ready() -> void:
 	_navigation.bake()
 	# Every machine builds a character the same way when the host spawns it.
 	_player_spawner.spawn_function = _spawn_player
+	_alien_spawner.spawn_function = _make_alien
+	_item_spawner.spawn_function = _make_pickup
 	if multiplayer.is_server():
 		# The host waits until every player has built the ship.
 		Net.all_peers_loaded.connect(_host_start, CONNECT_ONE_SHOT)
@@ -155,15 +159,36 @@ func _place_power_cell() -> void:
 ## Makes an alien and puts it in the world. Host only. The noise director
 ## (M4.1) uses this too.
 func spawn_alien(alien_id: StringName, at: Vector3) -> Alien:
+	var data := {"alien_id": alien_id, "position": at}
+	var alien: Alien
+	if Net.is_networked():
+		alien = _alien_spawner.spawn(data) as Alien
+	else:
+		alien = _make_alien(data) as Alien
+		if alien != null:
+			_aliens.add_child(alien)
+	if alien != null:
+		alien.died.connect(_on_alien_died)
+	return alien
+
+
+## Builds an alien from spawn data. Runs on every machine (the spawn function).
+func _make_alien(data: Dictionary) -> Node:
+	var alien_id := StringName(data["alien_id"])
 	var scene: PackedScene = ALIEN_SCENES.get(alien_id)
 	if scene == null:
 		push_warning("No scene for alien type %s" % alien_id)
 		return null
 	var alien: Alien = scene.instantiate()
-	alien.position = at
-	_aliens.add_child(alien)
-	alien.died.connect(_on_alien_died)
+	alien.position = data["position"]
 	return alien
+
+
+## Builds a pickup from spawn data. Runs on every machine (the spawn function).
+func _make_pickup(data: Dictionary) -> Node:
+	var pickup := Pickup.create(ItemStack.from_dict(data["stack"]))
+	pickup.position = data["position"]
+	return pickup
 
 
 func _on_alien_died(_alien: Alien, _killer: Node) -> void:
