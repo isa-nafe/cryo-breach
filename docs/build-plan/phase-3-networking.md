@@ -345,6 +345,23 @@ replication_config = SubResource("Repl_player")
   `is_crouching` so hit shapes match.
 - `GameState.get_player_by_peer(peer_id) -> PlayerCharacter`: add it.
 
+### What was built (and where it differs from the plan above)
+
+- `PlayerSpawner` is in `match.tscn`; `match.gd` sets `spawn_function` on every
+  machine, and the host spawns one character per player at the Cryo Bay spawn
+  points. Solo play adds the character directly and never uses the spawner.
+- `PlayerCharacter` has `peer_id`, `is_local()`, and splits its physics into
+  `_local_step` (input and movement on the owner's machine) and `_remote_step`
+  (body size only). The host makes sprint noise for every character from the
+  synced `is_sprinting`.
+- Only `MovementSync` is handed to the owning peer. `PlayerInput` stays under
+  the host and is simply switched off on characters you do not control.
+- Until M3.3, only the host's own character can pick up, search or use items.
+- Until M3.4 (doors are not synced), a client's character walks through doors
+  (it drops the door bit of its collision mask).
+- `GameState.get_player_by_peer()` is added. A death ends the match only when
+  nobody is left alive (M3.5 does the real flow).
+
 ### Owner checks
 
 - Each window shows the other player as a capsule moving smoothly,

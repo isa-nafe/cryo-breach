@@ -13,6 +13,12 @@ var enabled := true
 
 
 func _ready() -> void:
+	# Characters controlled from another machine read no keyboard here.
+	var character := get_parent() as PlayerCharacter
+	if character != null and not character.is_local():
+		enabled = false
+		set_process_unhandled_input(false)
+		return
 	_capture_mouse(true)
 
 

@@ -1,8 +1,8 @@
 extends Node3D
 ## The game world for one match. Every player builds the ship from the same
-## room assignment. The host then adds the player, the HUDs and the rules and
-## starts the clock; in Phase 3 the other players only see the ship until
-## M3.2 adds their characters.
+## room assignment. The host then adds a character for every player, its own
+## HUDs and the rules, and starts the clock. A `MultiplayerSpawner` makes the
+## same characters appear on every machine.
 ##
 ## Running this scene directly (not from the menu) is a solo match.
 
@@ -20,7 +20,11 @@ var crew_kills: int = 0
 ## What the match is doing, shown on the debug overlay.
 var status: String = "Match running"
 
+var _client_overview: OverviewCamera
+var _client_label: Label
+
 @onready var _players: Node3D = $Players
+@onready var _player_spawner: MultiplayerSpawner = $PlayerSpawner
 @onready var _aliens: Node3D = $Aliens
 @onready var _navigation: NavBaker = $Navigation
 @onready var _ship: ShipBuilder = $Navigation/Ship
@@ -35,32 +39,52 @@ func _ready() -> void:
 		assignment = RoomAssignment.make_phase2()
 	_ship.build(assignment)
 	_navigation.bake()
+	# Every machine builds a character the same way when the host spawns it.
+	_player_spawner.spawn_function = _spawn_player
 	if multiplayer.is_server():
 		# The host waits until every player has built the ship.
 		Net.all_peers_loaded.connect(_host_start, CONNECT_ONE_SHOT)
 	else:
+		_player_spawner.spawned.connect(_on_player_spawned)
 		_show_client_view()
 	Net.report_loaded()
 
 
-## Host only: adds the player and the rules, then starts the match everywhere.
-func _host_start() -> void:
-	var spawn_points: Node3D = _ship.furnishings[&"cryo_bay"].get_node("SpawnPoints")
+## Builds one player's character. Runs on every machine (it is the
+## spawner's spawn function); `data` comes from `_host_start`.
+func _spawn_player(data: Dictionary) -> Node:
 	var player: PlayerCharacter = PLAYER_SCENE.instantiate()
-	player.position = (spawn_points.get_child(0) as Marker3D).global_position
-	_players.add_child(player)
-	TestKit.give(player)
+	player.peer_id = int(data["peer_id"])
+	player.name = "Player%d" % player.peer_id
+	player.position = data["position"]
+	return player
+
+
+## Host only: adds a character for every player, then the HUDs and the rules,
+## and starts the match everywhere.
+func _host_start() -> void:
+	var bay_node: Node3D = _ship.furnishings[&"cryo_bay"]
+	var spawn_points: Array[Node] = bay_node.get_node("SpawnPoints").get_children()
+	var host_player: PlayerCharacter = null
+	var index := 0
+	for peer_id: int in Net.players:
+		var marker := spawn_points[index % spawn_points.size()] as Marker3D
+		var player := _add_player({"peer_id": peer_id, "position": marker.global_position})
+		TestKit.give(player)
+		player.died.connect(_on_player_died)
+		if peer_id == multiplayer.get_unique_id():
+			host_player = player
+		index += 1
 	var bay_zone: Zone = _ship.room_zones[&"cryo_bay"]
 	var bay := bay_zone.global_position
 	TestKit.scatter(get_tree(), Vector3(bay.x, 0.0, bay.z))
 	# The HUDs need the player to exist, so they are added after it.
 	for scene: PackedScene in [HUD_SCENE, DEBUG_HUD_SCENE]:
 		var hud := scene.instantiate()
-		hud.player_path = player.get_path()
+		hud.player_path = host_player.get_path()
 		add_child(hud)
 	GameState.loot_deck.setup(load("res://data/loot_table.tres") as LootTable, 1)
 	_place_power_cell()
-	player.died.connect(_on_player_died)
 	GameState.match_ended.connect(_on_match_ended)
 	var director := TimerDirector.new()
 	director.setup(spawn_alien)
@@ -70,16 +94,40 @@ func _host_start() -> void:
 		_rpc_start_match.rpc()
 
 
-## What a player who is not the host sees until M3.2: the whole ship from above.
+## Host only. In a network game the spawner copies the character to every
+## other machine; solo play adds it directly so it never depends on the network.
+func _add_player(data: Dictionary) -> PlayerCharacter:
+	if Net.is_networked():
+		return _player_spawner.spawn(data) as PlayerCharacter
+	var player := _spawn_player(data) as PlayerCharacter
+	_players.add_child(player)
+	return player
+
+
+## A client's own character has arrived: leave the waiting view.
+func _on_player_spawned(node: Node) -> void:
+	var player := node as PlayerCharacter
+	if player == null or not player.is_local():
+		return
+	_client_overview.set_active(false)
+	var player_name := Net.get_player_name(multiplayer.get_unique_id())
+	_client_label.text = (
+		"Connected as %s. You can walk and look around; " % player_name
+		+ "doors, items and shooting come in the next updates."
+	)
+
+
+## What a player who is not the host sees until their character arrives: the
+## whole ship from above.
 func _show_client_view() -> void:
-	var overview := OverviewCamera.new()
-	add_child(overview)
-	overview.set_active(true)
+	_client_overview = OverviewCamera.new()
+	add_child(_client_overview)
+	_client_overview.set_active(true)
 	var layer := CanvasLayer.new()
-	var label := Label.new()
-	label.text = "Connected to the host. Your character arrives in the next update (M3.2)."
-	label.position = Vector2(Config.tuning.menu_spacing, Config.tuning.menu_spacing)
-	layer.add_child(label)
+	_client_label = Label.new()
+	_client_label.text = "Connected to the host. Waiting for the match to start..."
+	_client_label.position = Vector2(Config.tuning.menu_spacing, Config.tuning.menu_spacing)
+	layer.add_child(_client_label)
 	add_child(layer)
 
 
@@ -118,9 +166,10 @@ func _on_alien_died(_alien: Alien, _killer: Node) -> void:
 
 
 func _on_player_died() -> void:
-	# Phase 2 only: in a solo match your death ends it. Phase 3 changes this.
+	# Until M3.5 the match ends when nobody is left alive.
 	await get_tree().create_timer(Config.tuning.death_end_delay).timeout
-	GameState.end_match(&"died")
+	if GameState.get_awake_players().is_empty():
+		GameState.end_match(&"died")
 
 
 func _on_match_ended(reason: StringName) -> void:

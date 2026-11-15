@@ -79,6 +79,14 @@ func register_player(player: PlayerCharacter) -> void:
 	players.append(player)
 
 
+## The character controlled by a network peer, or null.
+func get_player_by_peer(peer_id: int) -> PlayerCharacter:
+	for player: PlayerCharacter in players:
+		if is_instance_valid(player) and player.peer_id == peer_id:
+			return player
+	return null
+
+
 ## True once the grace period is over (encounters and events may happen).
 func is_grace_over() -> bool:
 	return clock >= Config.tuning.grace_period

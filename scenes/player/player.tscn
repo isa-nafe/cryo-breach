@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player_character.gd" id="1_char"]
 [ext_resource type="Script" path="res://scripts/player/player_input.gd" id="2_input"]
@@ -12,6 +12,31 @@ resource_local_to_scene = true
 radius = 0.35
 height = 1.8
 
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+resource_local_to_scene = true
+radius = 0.35
+height = 1.8
+
+[sub_resource type="BoxMesh" id="BoxMesh_visor"]
+size = Vector3(0.3, 0.1, 0.15)
+
+[sub_resource type="SceneReplicationConfig" id="Repl_player"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:rotation")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+properties/2/path = NodePath("Head:rotation")
+properties/2/spawn = true
+properties/2/replication_mode = 1
+properties/3/path = NodePath(".:is_crouching")
+properties/3/spawn = true
+properties/3/replication_mode = 2
+properties/4/path = NodePath(".:is_sprinting")
+properties/4/spawn = true
+properties/4/replication_mode = 2
+
 [node name="Player" type="CharacterBody3D" groups=["players"]]
 collision_layer = 2
 collision_mask = 39
@@ -21,11 +46,18 @@ script = ExtResource("1_char")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_body")
 
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_body")
+
 [node name="Head" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65, 0)
 
+[node name="Visor" type="MeshInstance3D" parent="Head"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.35)
+mesh = SubResource("BoxMesh_visor")
+
 [node name="Camera3D" type="Camera3D" parent="Head"]
-current = true
 fov = 80.0
 near = 0.05
 
@@ -56,3 +88,6 @@ script = ExtResource("7_item_user")
 
 [node name="PlayerInput" type="Node" parent="."]
 script = ExtResource("2_input")
+
+[node name="MovementSync" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("Repl_player")

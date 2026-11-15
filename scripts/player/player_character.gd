@@ -13,8 +13,15 @@ signal died
 ## Emitted when something wants to tell this player a short text.
 signal message_shown(text: String)
 
+## Physics layer 6 ("doors") as a collision-mask bit.
+const _DOOR_LAYER_BIT := 32
+
 ## The node that provides this character's InputState.
 @export var input_source_path: NodePath = ^"PlayerInput"
+
+## The network peer that controls this character. Set before it is added.
+## Solo play and the host's own character use 1.
+var peer_id: int = 1
 
 ## The room or corridor segment the character is standing in (or null).
 var current_zone: Zone = null
@@ -38,18 +45,43 @@ var _sprint_noise_timer := 0.0
 @onready var item_user: ItemUser = $ItemUser
 @onready var input_source: PlayerInput = get_node(input_source_path)
 @onready var _collision: CollisionShape3D = $CollisionShape3D
+@onready var _body_mesh: MeshInstance3D = $Body
+@onready var _visor: MeshInstance3D = $Head/Visor
+
+
+func _enter_tree() -> void:
+	# The controlling player's machine sends this character's movement; the
+	# host stays the authority over everything else about it.
+	$MovementSync.set_multiplayer_authority(peer_id)
 
 
 func _ready() -> void:
 	_tuning = Config.tuning
 	_capsule = _collision.shape as CapsuleShape3D
 	_set_body_height(_tuning.stand_height)
+	# You see through your own character's eyes and never see its body; other
+	# players' characters show as a capsule with a visor on the front.
+	_body_mesh.visible = not is_local()
+	_visor.visible = not is_local()
+	if is_local():
+		camera.make_current()
+		if not multiplayer.is_server():
+			# Doors are not synced until M3.4, so a client could never leave
+			# its room. Until then a client's character walks through them.
+			collision_mask &= ~_DOOR_LAYER_BIT
 	wounds.died.connect(_on_wounds_died)
 	wounds.changed.connect(_on_wounds_changed)
 	GameState.register_player(self)
 
 
+## True on the machine of the player who controls this character.
+func is_local() -> bool:
+	return peer_id == multiplayer.get_unique_id()
+
+
 func _process(_delta: float) -> void:
+	if not is_local():
+		return
 	# Looking is applied every rendered frame so the mouse feels responsive.
 	var look := input_source.state.look_delta
 	if look == Vector2.ZERO:
@@ -61,10 +93,24 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if is_local():
+		_local_step(delta)
+	else:
+		_remote_step(delta)
+	if multiplayer.is_server():
+		# The host makes the noise for every character, using the synced
+		# is_sprinting flag for the ones it does not control.
+		_update_noise(delta)
+
+
+## Runs on the machine of the player who controls this character: reads the
+## input and moves the body. The host receives the result.
+func _local_step(delta: float) -> void:
 	var input := input_source.poll()
 	if seated_pod != null and not is_dead:
 		# Sitting in a pod: no walking, the pod reads the E key.
 		velocity = Vector3.ZERO
+		is_sprinting = false
 		seated_pod.update_seated(self, input, delta)
 		if input.toggle_lamp:
 			lamp.visible = not lamp.visible
@@ -74,13 +120,25 @@ func _physics_process(delta: float) -> void:
 		_update_crouch(input.crouch, delta)
 	_update_movement(input, delta)
 	move_and_slide()
-	_update_noise(delta)
-	if not is_dead:
+	# Until M3.3 turns actions into host requests, only the host's own
+	# character can pick things up, search or use items.
+	if not is_dead and multiplayer.is_server():
 		interactor.update(self, input.interact_held, delta)
 		item_user.update(input, delta)
 	if input.toggle_lamp:
 		lamp.visible = not lamp.visible
 	input.clear_one_shots()
+
+
+## Runs for every character this machine does not control: the position, turn
+## and crouch flags arrive from its owner, so only the body size follows them.
+func _remote_step(delta: float) -> void:
+	var target_height := _tuning.stand_height
+	if is_crouching:
+		target_height = _tuning.crouch_height
+	if not is_equal_approx(_capsule.height, target_height):
+		var step := _tuning.crouch_transition_speed * delta
+		_set_body_height(move_toward(_capsule.height, target_height, step))
 
 
 ## Adds noise to the zone this character is in.
@@ -211,6 +269,8 @@ func _can_stand_up() -> bool:
 func _set_body_height(height: float) -> void:
 	_capsule.height = height
 	_collision.position.y = height * 0.5
+	(_body_mesh.mesh as CapsuleMesh).height = height
+	_body_mesh.position.y = height * 0.5
 	head.position.y = height - _tuning.eye_offset_from_top
 
 
