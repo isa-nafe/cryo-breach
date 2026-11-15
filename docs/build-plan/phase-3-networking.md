@@ -479,6 +479,31 @@ func _rpc_private_state(wound_state: Dictionary, inventory_state: Dictionary) ->
 `fire_origin_tolerance` 1.5 (metres between the reported shot origin and
 the host's idea of the player's head).
 
+### What was built (and where it differs from the plan above)
+
+- The requests live on `ItemUser` (not `PlayerCharacter`): `request_drop`,
+  `request_use_on_self`, `request_reload`, `request_swap_hand_slot`,
+  `request_swap_hands`, `request_fire`. On the host they run at once; on a
+  client they become an RPC that the host accepts only from the character's
+  owner.
+- `HitscanWeapon.update_trigger` now only decides *whether* a shot happens and
+  returns its pellet directions (the client rolls the spread). `apply_shot`
+  does the ray casts, ammo and noise on the host. `_host_fire` checks the fire
+  rate, the origin (`fire_origin_tolerance`) and the pellet count.
+- Shot effects: the host's own gun plays its own flash and sound; for every
+  other shot `ShotEffects` plays a flash and sound at the shooter's head on
+  all machines. The hit marker goes to the shooter with an RPC.
+- Private state: `to_dict` / `apply_dict` on `Inventory` and `PlayerWounds`. A
+  client asks for its first copy when its character appears; after that the
+  host sends a new copy on every change, to the owner only. Messages and
+  deaths follow the plan (`_rpc_message`, `_rpc_died`).
+- `ItemUser` keeps a hand's view when the item kind is unchanged, so a gun's
+  trigger state survives the inventory copy arriving.
+- Clients now get the HUD and debug overlay. The debug wound and door keys
+  (F5 to F8) work on the host only.
+- **Not yet shared (M3.4):** interacting with doors, crates and stations
+  (still host only), dropped items and pickups, aliens, the clock.
+
 ### Owner checks
 
 - The client can shoot the dummy and Crawlers; kills happen in both

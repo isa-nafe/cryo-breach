@@ -23,7 +23,7 @@ func to_dict() -> Dictionary:
 
 static func from_dict(dict: Dictionary) -> ItemStack:
 	var stack := ItemStack.new()
-	stack.data = Config.get_item(dict.id)
+	stack.data = Config.get_item(StringName(dict.id))
 	stack.count = dict.count
 	stack.charges = dict.charges
 	return stack

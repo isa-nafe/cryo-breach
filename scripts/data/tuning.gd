@@ -195,3 +195,13 @@ extends Resource
 @export var menu_spacing: int = 10
 ## Size of the title text on the menu.
 @export var menu_title_size: int = 40
+## Furthest the host lets a reported shot origin be from the shooter's head, in metres.
+@export var fire_origin_tolerance: float = 1.5
+## A client may fire this fraction of a weapon's fire interval early (network jitter).
+@export var fire_rate_tolerance: float = 0.8
+## Colour of the muzzle flash shown for other players' shots.
+@export var shot_effect_color: Color = Color(1, 0.8, 0.4, 1)
+## Brightness of the muzzle flash shown for other players' shots.
+@export var shot_effect_energy: float = 3.0
+## Reach of the muzzle flash shown for other players' shots, in metres.
+@export var shot_effect_range: float = 6.0

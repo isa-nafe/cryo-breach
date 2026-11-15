@@ -78,11 +78,7 @@ func _host_start() -> void:
 	var bay_zone: Zone = _ship.room_zones[&"cryo_bay"]
 	var bay := bay_zone.global_position
 	TestKit.scatter(get_tree(), Vector3(bay.x, 0.0, bay.z))
-	# The HUDs need the player to exist, so they are added after it.
-	for scene: PackedScene in [HUD_SCENE, DEBUG_HUD_SCENE]:
-		var hud := scene.instantiate()
-		hud.player_path = host_player.get_path()
-		add_child(hud)
+	_add_huds(host_player)
 	GameState.loot_deck.setup(load("res://data/loot_table.tres") as LootTable, 1)
 	_place_power_cell()
 	GameState.match_ended.connect(_on_match_ended)
@@ -104,6 +100,14 @@ func _add_player(data: Dictionary) -> PlayerCharacter:
 	return player
 
 
+## The HUDs need the player to exist, so they are added after it.
+func _add_huds(player: PlayerCharacter) -> void:
+	for scene: PackedScene in [HUD_SCENE, DEBUG_HUD_SCENE]:
+		var hud := scene.instantiate()
+		hud.player_path = player.get_path()
+		add_child(hud)
+
+
 ## A client's own character has arrived: leave the waiting view.
 func _on_player_spawned(node: Node) -> void:
 	var player := node as PlayerCharacter
@@ -113,8 +117,9 @@ func _on_player_spawned(node: Node) -> void:
 	var player_name := Net.get_player_name(multiplayer.get_unique_id())
 	_client_label.text = (
 		"Connected as %s. You can walk and look around; " % player_name
-		+ "doors, items and shooting come in the next updates."
+		+ "doors, pickups and aliens are shared in the next update (M3.4)."
 	)
+	_add_huds.call_deferred(player)
 
 
 ## What a player who is not the host sees until their character arrives: the

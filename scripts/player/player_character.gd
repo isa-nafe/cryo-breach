@@ -13,9 +13,6 @@ signal died
 ## Emitted when something wants to tell this player a short text.
 signal message_shown(text: String)
 
-## Physics layer 6 ("doors") as a collision-mask bit.
-const _DOOR_LAYER_BIT := 32
-
 ## The node that provides this character's InputState.
 @export var input_source_path: NodePath = ^"PlayerInput"
 
@@ -35,6 +32,7 @@ var _tuning: Tuning
 var _capsule: CapsuleShape3D
 var _zones: Array[Zone] = []
 var _sprint_noise_timer := 0.0
+var _state_requested := false
 
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
@@ -68,9 +66,15 @@ func _ready() -> void:
 		if not multiplayer.is_server():
 			# Doors are not synced until M3.4, so a client could never leave
 			# its room. Until then a client's character walks through them.
-			collision_mask &= ~_DOOR_LAYER_BIT
-	wounds.died.connect(_on_wounds_died)
-	wounds.changed.connect(_on_wounds_changed)
+			collision_mask &= ~Layers.DOORS
+	if multiplayer.is_server():
+		# Only the host changes wounds and inventories; it tells the owner.
+		wounds.died.connect(_on_wounds_died)
+		wounds.changed.connect(_on_wounds_changed)
+		wounds.changed.connect(_host_send_private_state)
+		inventory.changed.connect(_host_send_private_state)
+	elif is_local():
+		_rpc_request_state.rpc_id(1)
 	GameState.register_player(self)
 
 
@@ -120,10 +124,12 @@ func _local_step(delta: float) -> void:
 		_update_crouch(input.crouch, delta)
 	_update_movement(input, delta)
 	move_and_slide()
-	# Until M3.3 turns actions into host requests, only the host's own
-	# character can pick things up, search or use items.
-	if not is_dead and multiplayer.is_server():
-		interactor.update(self, input.interact_held, delta)
+	if not is_dead:
+		# Items work from every machine (their changes are requests to the
+		# host). Interacting with doors, crates and stations stays host-only
+		# until M3.4 gives those objects the same names on every machine.
+		if multiplayer.is_server():
+			interactor.update(self, input.interact_held, delta)
 		item_user.update(input, delta)
 	if input.toggle_lamp:
 		lamp.visible = not lamp.visible
@@ -171,10 +177,22 @@ func is_awake() -> bool:
 	return not is_dead
 
 
-## Shows a short message on this player's HUD. Phase 3 sends it only to the
-## owner of the character.
+## Shows a short message on this player's HUD. The host's call reaches the
+## owner of the character only.
 func show_message(text: String) -> void:
-	message_shown.emit(text)
+	if is_local():
+		message_shown.emit(text)
+	elif multiplayer.is_server():
+		_rpc_message.rpc_id(peer_id, text)
+
+
+## Host only: the flash and sound of a shot, for everyone who cannot see this
+## character's gun. The host's own gun plays its own effects.
+func broadcast_shot_effects() -> void:
+	if not is_local():
+		ShotEffects.play(self)
+	if Net.is_networked():
+		_rpc_shot_effects.rpc()
 
 
 ## A short description of what the character is doing, for the debug HUD.
@@ -196,12 +214,20 @@ func get_spread_multiplier() -> float:
 
 
 ## A broken arm takes a hand away: whatever it held falls to the floor.
+## Host only.
 func _on_wounds_changed() -> void:
 	for stack: ItemStack in inventory.set_usable_hands(wounds.get_usable_hands()):
 		item_user.drop_stack(stack)
 
 
+## Host only: everyone learns of a death.
 func _on_wounds_died() -> void:
+	_apply_death()
+	if Net.is_networked():
+		_rpc_died.rpc()
+
+
+func _apply_death() -> void:
 	is_dead = true
 	if seated_pod != null:
 		seated_pod.release(self)
@@ -211,6 +237,43 @@ func _on_wounds_died() -> void:
 	var fall := create_tween()
 	fall.tween_property(head, "position:y", _tuning.dead_eye_height, 0.6)
 	died.emit()
+
+
+## Host only: sends the owner a full copy of their wounds and inventory. Other
+## players never see them (design rule: nobody else sees your wounds or items).
+func _host_send_private_state() -> void:
+	if is_local() or not _state_requested or not Net.is_networked():
+		return
+	_rpc_private_state.rpc_id(peer_id, wounds.to_dict(), inventory.to_dict())
+
+
+## The owner asks for its first copy once its character exists on its machine.
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_request_state() -> void:
+	if multiplayer.is_server() and multiplayer.get_remote_sender_id() == peer_id:
+		_state_requested = true
+		_host_send_private_state()
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_private_state(wound_state: Dictionary, inventory_state: Dictionary) -> void:
+	wounds.apply_dict(wound_state)
+	inventory.apply_dict(inventory_state)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_message(text: String) -> void:
+	message_shown.emit(text)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_died() -> void:
+	_apply_death()
+
+
+@rpc("authority", "call_remote", "unreliable")
+func _rpc_shot_effects() -> void:
+	ShotEffects.play(self)
 
 
 func _update_movement(input: InputState, delta: float) -> void:

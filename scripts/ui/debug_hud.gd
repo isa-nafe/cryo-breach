@@ -58,6 +58,9 @@ func _debug_keys(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	if key == null or not key.pressed or key.echo or _player == null:
 		return
+	# The wound and door keys change the game, so only the host may use them.
+	if not multiplayer.is_server() and key.physical_keycode != KEY_F4:
+		return
 	match key.physical_keycode:
 		KEY_F5:
 			_player.wounds.add_light()

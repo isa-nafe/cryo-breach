@@ -187,3 +187,30 @@ func _merge_into_existing(stack: ItemStack) -> void:
 		stack.count -= moved
 		if stack.count <= 0:
 			return
+
+
+## A copy of everything carried, for sending to the owner (Phase 3).
+func to_dict() -> Dictionary:
+	var hand_list: Array = []
+	for stack: ItemStack in hands:
+		hand_list.append(stack.to_dict() if stack != null else null)
+	var slot_list: Array = []
+	for stack: ItemStack in slots:
+		slot_list.append(stack.to_dict() if stack != null else null)
+	return {"hands": hand_list, "slots": slot_list, "usable_hands": usable_hands}
+
+
+## Replaces everything carried with a copy from the host.
+func apply_dict(state: Dictionary) -> void:
+	usable_hands = state["usable_hands"]
+	for i in hands.size():
+		hands[i] = _stack_from(state["hands"][i])
+	for i in slots.size():
+		slots[i] = _stack_from(state["slots"][i])
+	changed.emit()
+
+
+func _stack_from(entry: Variant) -> ItemStack:
+	if entry == null:
+		return null
+	return ItemStack.from_dict(entry)

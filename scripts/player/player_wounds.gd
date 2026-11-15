@@ -134,6 +134,31 @@ func describe_serious() -> String:
 	return ", ".join(parts)
 
 
+## A copy of the wounds, for sending to the owner (Phase 3).
+func to_dict() -> Dictionary:
+	var effects: Array = []
+	for effect: Effect in serious_effects:
+		effects.append(int(effect))
+	var dressed: Array = []
+	for flag: bool in serious_dressed:
+		dressed.append(flag)
+	return {"light": light_wounds, "effects": effects, "dressed": dressed, "dead": is_dead}
+
+
+## Replaces the wounds with a copy from the host. Does not emit `died`; the
+## host announces a death separately.
+func apply_dict(state: Dictionary) -> void:
+	light_wounds = state["light"]
+	serious_effects.clear()
+	for effect: int in state["effects"]:
+		serious_effects.append(effect as Effect)
+	serious_dressed.clear()
+	for flag: bool in state["dressed"]:
+		serious_dressed.append(flag)
+	is_dead = state["dead"]
+	changed.emit()
+
+
 func _add_one_serious() -> void:
 	var effect := randi_range(0, Effect.size() - 1) as Effect
 	serious_effects.append(effect)

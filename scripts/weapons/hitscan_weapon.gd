@@ -47,28 +47,38 @@ func bind_stack(item_stack: ItemStack) -> void:
 	ammo_changed.emit(rounds, data.capacity)
 
 
-## Call every physics frame with whether the fire button is held.
-func update_trigger(held: bool, shooter: PlayerCharacter, delta: float) -> void:
+## Call every physics frame with whether the fire button is held. When the
+## trigger fires a shot, returns its directions (one per pellet); otherwise an
+## empty array. The caller applies the shot with `apply_shot`: on the host
+## directly, from a client through a request.
+func update_trigger(held: bool, shooter: PlayerCharacter, delta: float) -> PackedVector3Array:
 	_cooldown = maxf(_cooldown - delta, 0.0)
+	var directions := PackedVector3Array()
 	var pulled := held and (data.automatic or not _trigger_was_held)
 	_trigger_was_held = held
 	if not pulled or _cooldown > 0.0:
-		return
+		return directions
 	_cooldown = data.fire_interval
 	if rounds <= 0:
 		dry_fired.emit()
-		return
+		return directions
+	var spread := data.spread_degrees * shooter.get_spread_multiplier()
+	var aim := shooter.camera.global_basis
+	for _i in data.pellets:
+		directions.append(_spread_direction(aim, spread))
+	return directions
+
+
+## Host only: fires one shot. Uses up a round, casts a ray along each direction,
+## damages what they hit and makes noise.
+func apply_shot(shooter: PlayerCharacter, origin: Vector3, directions: PackedVector3Array) -> void:
 	rounds -= 1
 	if stack:
 		stack.charges = rounds
 	ammo_changed.emit(rounds, data.capacity)
-	var spread := data.spread_degrees * shooter.get_spread_multiplier()
-	var aim := shooter.camera.global_basis
-	var origin := shooter.camera.global_position
-	for _i in data.pellets:
-		_resolve_shot(shooter, origin, _spread_direction(aim, spread))
+	for direction: Vector3 in directions:
+		_resolve_shot(shooter, origin, direction.normalized())
 	shooter.emit_noise(data.noise)
-	_show_effects()
 	fired.emit()
 
 
@@ -80,7 +90,7 @@ func reload_full() -> void:
 	ammo_changed.emit(rounds, data.capacity)
 
 
-## Decides what one ray hits. In Phase 3 this moves to the host.
+## Decides what one ray hits. Host only.
 func _resolve_shot(shooter: PlayerCharacter, origin: Vector3, direction: Vector3) -> void:
 	var end := origin + direction * data.max_range
 	var query := PhysicsRayQueryParameters3D.create(origin, end, Layers.BULLET_MASK)
@@ -102,7 +112,8 @@ func _spread_direction(aim: Basis, spread_deg: float) -> Vector3:
 	return (aim * local).normalized()
 
 
-func _show_effects() -> void:
+## The flash and the sound of a shot from this gun.
+func show_effects() -> void:
 	_shot_sound.play()
 	_flash.visible = true
 	var timer := get_tree().create_timer(Config.tuning.muzzle_flash_seconds)

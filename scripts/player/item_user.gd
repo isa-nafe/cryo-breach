@@ -23,6 +23,8 @@ var _player: PlayerCharacter
 var _inventory: Inventory
 var _hand_nodes: Array[Node3D] = []
 var _views: Array[Node3D] = [null, null]
+var _view_ids: Array[StringName] = [&"", &""]
+var _last_fire_msec: Array[int] = [0, 0]
 var _holds: Array[HoldAction] = [HoldAction.new(), HoldAction.new()]
 var _reload_hold := HoldAction.new()
 var _swap_timer := 0.0
@@ -47,7 +49,7 @@ func update(input: InputState, delta: float) -> void:
 		hold_fraction = 1.0 - _swap_timer / Config.tuning.hand_slot_swap_seconds
 		_swap_timer -= delta
 		if _swap_timer <= 0.0:
-			_inventory.swap_hand_slot(Inventory.MAIN_HAND, _pending_slot)
+			request_swap_hand_slot(Inventory.MAIN_HAND, _pending_slot)
 		return
 	_handle_buttons(input)
 	if _swap_timer > 0.0:
@@ -62,22 +64,58 @@ func get_main_weapon() -> HitscanWeapon:
 	return _views[Inventory.MAIN_HAND] as HitscanWeapon
 
 
+## Every request below does its work on the host. On the host (and in solo
+## play) it runs at once; on a client it is sent to the host, which checks it
+## came from this character's owner and that it makes sense.
+
+
 ## Drops whatever is in a hand onto the floor.
 func request_drop(hand: int) -> void:
-	# Phase 3: send an RPC to the host instead when not the server.
-	_host_drop(hand)
+	if multiplayer.is_server():
+		_host_drop(hand)
+	else:
+		_rpc_drop.rpc_id(1, hand)
 
 
 ## Uses a medkit or bandage on yourself.
 func request_use_on_self(hand: int) -> void:
-	# Phase 3: send an RPC to the host instead when not the server.
-	_host_use_on_self(hand)
+	if multiplayer.is_server():
+		_host_use_on_self(hand)
+	else:
+		_rpc_use_on_self.rpc_id(1, hand)
 
 
 ## Reloads the gun in a hand from an ammo box.
 func request_reload(hand: int) -> void:
-	# Phase 3: send an RPC to the host instead when not the server.
-	_host_reload(hand)
+	if multiplayer.is_server():
+		_host_reload(hand)
+	else:
+		_rpc_reload.rpc_id(1, hand)
+
+
+## Swaps a hand with a slot.
+func request_swap_hand_slot(hand: int, slot: int) -> void:
+	if multiplayer.is_server():
+		_host_swap_hand_slot(hand, slot)
+	else:
+		_rpc_swap_hand_slot.rpc_id(1, hand, slot)
+
+
+## Swaps the main and off hand.
+func request_swap_hands() -> void:
+	if multiplayer.is_server():
+		_host_swap_hands()
+	else:
+		_rpc_swap_hands.rpc_id(1)
+
+
+## Fires the gun in a hand along these directions. On a client this is a
+## request; the host checks it before it counts.
+func request_fire(hand: int, origin: Vector3, directions: PackedVector3Array) -> void:
+	if multiplayer.is_server():
+		_host_fire(hand, origin, directions)
+	else:
+		_rpc_fire.rpc_id(1, hand, origin, directions)
 
 
 ## Host only: puts a stack on the floor in front of the player.
@@ -89,7 +127,7 @@ func drop_stack(stack: ItemStack) -> void:
 
 
 func _host_drop(hand: int) -> void:
-	if _player.is_dead:
+	if _player.is_dead or not _is_hand(hand):
 		return
 	var stack := _inventory.take_from_hand(hand)
 	if stack:
@@ -97,8 +135,10 @@ func _host_drop(hand: int) -> void:
 
 
 func _host_use_on_self(hand: int) -> void:
+	if _player.is_dead or not _is_hand(hand):
+		return
 	var stack := _inventory.hands[hand]
-	if stack == null or _player.is_dead:
+	if stack == null:
 		return
 	var used := false
 	match stack.data.use_kind:
@@ -113,7 +153,7 @@ func _host_use_on_self(hand: int) -> void:
 
 
 func _host_reload(hand: int) -> void:
-	if _player.is_dead or _find_reloadable_hand() != hand:
+	if _player.is_dead or not _is_hand(hand) or _find_reloadable_hand() != hand:
 		return
 	var stack := _inventory.hands[hand]
 	stack.charges = stack.data.weapon.capacity
@@ -121,12 +161,112 @@ func _host_reload(hand: int) -> void:
 	_inventory.consume(&"ammo_box")
 
 
+func _host_swap_hand_slot(hand: int, slot: int) -> void:
+	if _player.is_dead or not _is_hand(hand) or slot < 0 or slot >= _inventory.slots.size():
+		return
+	_inventory.swap_hand_slot(hand, slot)
+
+
+func _host_swap_hands() -> void:
+	if not _player.is_dead:
+		_inventory.swap_hands()
+
+
+func _host_fire(hand: int, origin: Vector3, directions: PackedVector3Array) -> void:
+	if _player.is_dead or not _is_hand(hand):
+		return
+	var stack := _inventory.hands[hand]
+	var weapon := _views[hand] as HitscanWeapon
+	if stack == null or weapon == null or stack.charges <= 0:
+		return
+	if stack.data.use_kind != ItemData.UseKind.HITSCAN:
+		return
+	var tuning := Config.tuning
+	# Do not trust the client blindly: right rate, right place, right pellets.
+	var now := Time.get_ticks_msec()
+	var min_gap := int(weapon.data.fire_interval * tuning.fire_rate_tolerance * 1000.0)
+	if now - _last_fire_msec[hand] < min_gap:
+		return
+	if origin.distance_to(_player.camera.global_position) > tuning.fire_origin_tolerance:
+		return
+	if directions.size() != weapon.data.pellets:
+		return
+	_last_fire_msec[hand] = now
+	weapon.apply_shot(_player, origin, directions)
+	# Ammo is not an inventory "change" by itself; tell the owner the new count.
+	_inventory.changed.emit()
+	_player.broadcast_shot_effects()
+
+
+## Host only: a shot fired from this machine's own gun.
+func _fire_local(hand: int, weapon: HitscanWeapon, directions: PackedVector3Array) -> void:
+	var origin := _player.camera.global_position
+	if multiplayer.is_server():
+		weapon.apply_shot(_player, origin, directions)
+		weapon.show_effects()
+		_player.broadcast_shot_effects()
+	else:
+		request_fire(hand, origin, directions)
+
+
+func _is_hand(hand: int) -> bool:
+	return hand >= Inventory.MAIN_HAND and hand <= Inventory.OFF_HAND
+
+
+## True when an RPC on this node came from the owner of this character and
+## arrived at the host.
+func _is_owner_request() -> bool:
+	return multiplayer.is_server() and multiplayer.get_remote_sender_id() == _player.peer_id
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_drop(hand: int) -> void:
+	if _is_owner_request():
+		_host_drop(hand)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_use_on_self(hand: int) -> void:
+	if _is_owner_request():
+		_host_use_on_self(hand)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_reload(hand: int) -> void:
+	if _is_owner_request():
+		_host_reload(hand)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_swap_hand_slot(hand: int, slot: int) -> void:
+	if _is_owner_request():
+		_host_swap_hand_slot(hand, slot)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_swap_hands() -> void:
+	if _is_owner_request():
+		_host_swap_hands()
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_fire(hand: int, origin: Vector3, directions: PackedVector3Array) -> void:
+	if _is_owner_request():
+		_host_fire(hand, origin, directions)
+
+
+## Host to owner: your shot hit something (for the hit marker).
+@rpc("authority", "call_remote", "reliable")
+func _rpc_hit_confirmed(killed: bool) -> void:
+	hit_confirmed.emit(killed)
+
+
 func _handle_buttons(input: InputState) -> void:
 	if input.slot_press > 0 and input.slot_press <= _inventory.slots.size():
 		_pending_slot = input.slot_press - 1
 		_swap_timer = Config.tuning.hand_slot_swap_seconds
 	elif input.swap_hands:
-		_inventory.swap_hands()
+		request_swap_hands()
 	elif input.drop:
 		request_drop(Inventory.MAIN_HAND)
 
@@ -150,7 +290,9 @@ func _update_hand(hand: int, held: bool, delta: float) -> void:
 			hold.update(false, null, 0.0, delta)
 			var weapon := _views[hand] as HitscanWeapon
 			if weapon:
-				weapon.update_trigger(held, _player, delta)
+				var directions := weapon.update_trigger(held, _player, delta)
+				if not directions.is_empty():
+					_fire_local(hand, weapon, directions)
 		ItemData.UseKind.HEAL_LIGHT, ItemData.UseKind.DRESS_WOUND:
 			if hold.update(held, stack, item.use_seconds, delta):
 				request_use_on_self(hand)
@@ -187,20 +329,29 @@ func _show_progress(hold: HoldAction, seconds: float) -> void:
 		hold_fraction = maxf(hold_fraction, hold.get_fraction(seconds))
 
 
-## Rebuilds what is shown in the hands after any inventory change.
+## Updates what is shown in the hands after any inventory change. A hand that
+## still holds the same kind of item keeps its view (so a gun keeps its trigger
+## state); it only reloads the item's numbers.
 func _refresh_views() -> void:
 	for hand in 2:
+		var stack := _inventory.hands[hand]
 		var old := _views[hand]
+		if stack != null and old != null and _view_ids[hand] == stack.data.id:
+			var kept := old as HitscanWeapon
+			if kept:
+				kept.bind_stack(stack)
+			continue
 		if old:
 			old.visible = false
 			old.queue_free()
 			_views[hand] = null
-		var stack := _inventory.hands[hand]
+		_view_ids[hand] = &""
 		if stack == null:
 			continue
 		var view := _make_view(stack)
 		_hand_nodes[hand].add_child(view)
 		_views[hand] = view
+		_view_ids[hand] = stack.data.id
 		var weapon := view as HitscanWeapon
 		if weapon:
 			weapon.bind_stack(stack)
@@ -224,4 +375,8 @@ func _make_view(stack: ItemStack) -> Node3D:
 
 
 func _on_weapon_hit(killed: bool) -> void:
-	hit_confirmed.emit(killed)
+	if _player.is_local():
+		hit_confirmed.emit(killed)
+	elif multiplayer.is_server():
+		# The shooter is on another machine: tell them for the hit marker.
+		_rpc_hit_confirmed.rpc_id(_player.peer_id, killed)
